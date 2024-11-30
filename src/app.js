@@ -9,6 +9,8 @@ const { fetchAndProcessWfpJobVacancies } = require("./util/etl-wfp");
 const { fetchAndProcessUnhcrJobVacancies } = require("./util/etl-unhcr");
 const { fetchAndProcessImfJobVacancies } = require("./util/etl-imf");
 const { fetchAndProcessUndpJobVacancies } = require("./util/etl-undp");
+const { fetchOrganizationList } = require("./util/etl-org");
+
 const PORT = process.env.PORT;
 
 const app = express();
@@ -19,9 +21,10 @@ app.use(express.json());
 app.listen(PORT, () => {
   console.log(`ETL Server is started on PORT: ${PORT}`);
   console.log('Running scheduled tasks...', new Date());
-  fetchAndProcessImfJobVacancies();
-  fetchAndProcessUnhcrJobVacancies();
-  fetchAndProcessWfpJobVacancies();
+  //fetchOrganizationList()
+  // fetchAndProcessImfJobVacancies();
+  // fetchAndProcessUnhcrJobVacancies();
+  // fetchAndProcessWfpJobVacancies();
   fetchAndProcessInspiraJobVacancies();
   //fetchAndProcessUndpJobVacancies(); 
 

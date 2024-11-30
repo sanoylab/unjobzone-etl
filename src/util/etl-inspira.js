@@ -2,7 +2,7 @@ require("dotenv").config();
 
 const { Client } = require('pg');
 const { credentials } = require("./db");
-
+const { getOrganizationId } = require("./shared");  
 const url = 'https://careers.un.org/api/public/opening/jo/list/filteredV2/en'; // Replace with your API endpoint
 
 // Function to fetch and process job vacancies
@@ -68,17 +68,19 @@ async function fetchAndProcessInspiraJobVacancies() {
                   jf,
                   jc,
                   jl
+                  
               } = job;
   
               // Prepare the insert query
               const query = `
                   INSERT INTO job_vacancies (job_id, language, category_code, job_title, job_code_title, job_description,
                       job_family_code, job_level, duty_station, recruitment_type, start_date, end_date, dept,
-                      total_count, jn, jf, jc, jl, created, data_source)
-                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+                      total_count, jn, jf, jc, jl, created, data_source, organization_id)
+                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
                   RETURNING id;
               `;
-  
+              const orgId = await getOrganizationId(dept?.name); // Get organization id
+
               // Insert the job vacancy into the database
               await client.query(query, [
                 jobId,
@@ -100,7 +102,8 @@ async function fetchAndProcessInspiraJobVacancies() {
                 jc?.name || '' ,
                 jl?.name || '' ,
                 new Date(),
-                'inspira'
+                'inspira',
+                orgId // Get organization id
             ]);
             console.log(jobTitle); // Handle the response data here
 
@@ -115,6 +118,4 @@ async function fetchAndProcessInspiraJobVacancies() {
     await client.end(); // Close the database connection
 }
 
-
-
-module.exports = { fetchAndProcessInspiraJobVacancies  };
+module.exports = { fetchAndProcessInspiraJobVacancies };
