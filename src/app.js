@@ -22,11 +22,12 @@ app.listen(PORT, () => {
   console.log(`ETL Server is started on PORT: ${PORT}`);
   console.log('Running scheduled tasks...', new Date());
   //fetchOrganizationList()
-  // fetchAndProcessImfJobVacancies();
-  // fetchAndProcessUnhcrJobVacancies();
-  // fetchAndProcessWfpJobVacancies();
+
+  fetchAndProcessImfJobVacancies();
+  fetchAndProcessUnhcrJobVacancies();
+  fetchAndProcessWfpJobVacancies();
   fetchAndProcessInspiraJobVacancies();
-  //fetchAndProcessUndpJobVacancies(); 
+  fetchAndProcessUndpJobVacancies(); 
 
 });
 
