@@ -8,7 +8,9 @@ const url = "https://imf.wd5.myworkdayjobs.com/wday/cxs/imf/IMF/jobs"; // Replac
 
 // Function to fetch and process job vacancies
 async function fetchAndProcessImfJobVacancies() {
+  console.log("==================================");
   console.log("IMF Job Vacancies ETL started...");
+  console.log("==================================");
   const client = new Client(credentials);
 
   await client.connect();
