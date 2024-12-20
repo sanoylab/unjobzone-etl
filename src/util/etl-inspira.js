@@ -7,7 +7,11 @@ const url = 'https://careers.un.org/api/public/opening/jo/list/filteredV2/en'; /
 
 // Function to fetch and process job vacancies
 async function fetchAndProcessInspiraJobVacancies() {
+    console.log("============================================");
+
     console.log("UN Secretariate Job Vacancies ETL started...");
+    console.log("============================================");
+
 
     const client = new Client(credentials);
 

@@ -8,7 +8,9 @@ const url = "https://wd3.myworkdaysite.com/wday/cxs/wfp/job_openings/jobs"; // R
 
 // Function to fetch and process job vacancies
 async function fetchAndProcessWfpJobVacancies() {
+  console.log("==================================");
   console.log("WFP Job Vacancies ETL started...");
+  console.log("==================================");
   const client = new Client(credentials);
 
   await client.connect();

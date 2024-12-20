@@ -8,7 +8,10 @@ const url = "https://unhcr.wd3.myworkdayjobs.com/wday/cxs/unhcr/External/jobs"; 
 
 // Function to fetch and process job vacancies
 async function fetchAndProcessUnhcrJobVacancies() {
+  console.log("==================================");
   console.log("UNHCR Job Vacancies ETL started...");
+  console.log("==================================");
+
   const client = new Client(credentials);
 
   await client.connect();
