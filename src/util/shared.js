@@ -33,6 +33,9 @@ async function getOrganizationId(dept) {
 }
 
 async function removeDuplicateJobVacancies() {
+    console.log("===========================");
+    console.log('Data cleaning started...');
+    console.log("===========================");
   const client = new Client(credentials);
   await client.connect();
   
@@ -63,6 +66,8 @@ async function removeDuplicateJobVacancies() {
     `;
     await client.query(query);
     console.log('Duplicate job vacancies removed successfully.');
+    console.log("============================================");
+
   } catch (error) {
     console.error('Error removing duplicate job vacancies:', error);
   } finally {

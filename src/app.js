@@ -41,24 +41,24 @@ app.listen(PORT, async () => {
   }
 });
 
-cron.schedule("0 0 * * *", () => {
+cron.schedule("0 0 * * *", async() => {
   console.log("Running scheduled tasks...", new Date());
-  fetchAndProcessJobVacancies();
-  removeDuplicateJobVacancies();
+  await fetchAndProcessJobVacancies();
+  await removeDuplicateJobVacancies();
 });
 
-cron.schedule("0 23 * * *", () => {
-  fetchAndProcessWfpJobVacancies();
-  removeDuplicateJobVacancies();
+cron.schedule("0 23 * * *", async () => {
+  await fetchAndProcessWfpJobVacancies();
+  await removeDuplicateJobVacancies();
 });
 
-cron.schedule("0 22 * * *", () => {
-  fetchAndProcessUnhcrJobVacancies();
-  removeDuplicateJobVacancies();
+cron.schedule("0 22 * * *", async() => {
+  await fetchAndProcessUnhcrJobVacancies();
+  await removeDuplicateJobVacancies();
 });
-cron.schedule("0 21 * * *", () => {
-  fetchAndProcessImfJobVacancies();
-  removeDuplicateJobVacancies();
+cron.schedule("0 21 * * *", async () => {
+  await fetchAndProcessImfJobVacancies();
+  await removeDuplicateJobVacancies();
 });
 cron.schedule("0 20 * * *", () => {
   //fetchAndProcessUndpJobVacancies();

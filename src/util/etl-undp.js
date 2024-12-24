@@ -9,7 +9,6 @@ const url = 'https://estm.fa.em2.oraclecloud.com/hcmRestApi/resources/latest/rec
 // Function to fetch and process job vacancies
 async function fetchAndProcessUndpJobVacancies() {
     console.log("==================================");
-
     console.log("UNDP Job Vacancies ETL started...");
     console.log("==================================");
 
