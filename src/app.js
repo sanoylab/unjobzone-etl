@@ -9,6 +9,7 @@ const { fetchAndProcessWfpJobVacancies } = require("./util/etl-wfp");
 const { fetchAndProcessUnhcrJobVacancies } = require("./util/etl-unhcr");
 const { fetchAndProcessImfJobVacancies } = require("./util/etl-imf");
 const { fetchAndProcessUndpJobVacancies } = require("./util/etl-undp");
+const { generateJobRelatedBlogPost } = require("./util/etl-blog");
 const {
   fetchAndProcessWorldBankJobVacancies,
 } = require("./util/etl-worldbank");
@@ -29,12 +30,15 @@ app.listen(PORT, async () => {
   //fetchOrganizationList()
   //fetchAndProcessWfpJobVacancies()
   try {
+    
     await fetchAndProcessImfJobVacancies();
     await fetchAndProcessUnhcrJobVacancies();
     await fetchAndProcessWfpJobVacancies();
     await fetchAndProcessInspiraJobVacancies();
     await fetchAndProcessUndpJobVacancies();
     await removeDuplicateJobVacancies();
+    await generateJobRelatedBlogPost();
+    
     console.log("All tasks completed successfully.");
   } catch (error) {
     console.error("Error running scheduled tasks:", error);
