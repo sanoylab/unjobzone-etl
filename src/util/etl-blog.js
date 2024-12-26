@@ -4,7 +4,7 @@ const { credentials } = require("./db");
 
 async function generateJobRelatedBlogPost() {
     const apiKey = `${process.env.OPENAI_API_KEY}`; // Replace with your OpenAI API key
-    const prompt = 'Generate a job-related blog post with a title and body for international organization like United Nations. Format the body in multiple paragraphs.';
+    const prompt = 'Generate a job-related blog post with a title and body for international organization like United Nations. Format the body in multiple paragraphs with html formatting tags including <p><br><strong><em>, etc... add html tag ONLY on the body not on the title';
   
     try {
       const response = await fetch(
