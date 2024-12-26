@@ -4,7 +4,7 @@ const { credentials } = require("./db");
 
 async function generateJobRelatedBlogPost() {
     const apiKey = `${process.env.OPENAI_API_KEY}`; // Replace with your OpenAI API key
-    const prompt = 'Generate a job-related blog post with a title and body for international organization like United Nations.';
+    const prompt = 'Generate a job-related blog post with a title and body for international organization like United Nations. Format the body in multiple paragraphs.';
   
     try {
       const response = await fetch(
@@ -27,7 +27,6 @@ async function generateJobRelatedBlogPost() {
       );
   
       const data = await response.json();
-      console.log('Generated blog post:', data);
       let generatedText = data.choices[0].message.content.trim();
       let [title, ...body] = generatedText.split('\n').filter(line => line.trim() !== '');
 
@@ -35,12 +34,13 @@ async function generateJobRelatedBlogPost() {
       if (title.startsWith('Title: ')) {
         title = title.replace('Title: ', '');
       }
-
+    // Remove double quotes from the title
+    title = title.replace(/"/g, '');
       const blogPost = {
         title: title,
         content: body.join('\n'),
         featured: "No",
-        thumbnail: null
+        thumbnail: "3.webp"
       };
 
       // Save the blog post to the database
