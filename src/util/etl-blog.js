@@ -30,8 +30,8 @@ async function generateJobRelatedBlogPost() {
         'https://images.pexels.com/photos/1275393/pexels-photo-1275393.jpeg?auto=compress&cs=tinysrgb&w=600',
         'https://images.pexels.com/photos/3039036/pexels-photo-3039036.jpeg?auto=compress&cs=tinysrgb&w=600',
         'https://images.pexels.com/photos/12886800/pexels-photo-12886800.jpeg?auto=compress&cs=tinysrgb&w=600',
-         'https://images.pexels.com/photos/6757969/pexels-photo-6757969.jpeg?auto=compress&cs=tinysrgb&w=600',
-         'https://images.pexels.com/photos/6507744/pexels-photo-6507744.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/6757969/pexels-photo-6757969.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/6507744/pexels-photo-6507744.jpeg?auto=compress&cs=tinysrgb&w=600',
 
     ];
   
