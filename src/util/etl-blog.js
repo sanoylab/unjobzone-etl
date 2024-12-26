@@ -4,7 +4,36 @@ const { credentials } = require("./db");
 
 async function generateJobRelatedBlogPost() {
     const apiKey = `${process.env.OPENAI_API_KEY}`; // Replace with your OpenAI API key
-    const prompt = 'Generate a job-related blog post with a title and body for international organization like United Nations. Format the body in multiple paragraphs with html formatting tags including <p><br><strong><em>, etc... add html tag ONLY on the body not on the title';
+    const prompt = 'Generate a job-related blog post with a title and body for international organization like United Nations. Please make the body of the text to be multiple paragraphs that holds htmml tags like p, h2, h3, ul, etc... and do not add any tag on the title (just plain text)';
+    const thumbnailUrls = [
+        'https://images.pexels.com/photos/313690/pexels-photo-313690.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/327540/pexels-photo-327540.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/585419/pexels-photo-585419.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/165907/pexels-photo-165907.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/3756681/pexels-photo-3756681.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/1462650/pexels-photo-1462650.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/776615/pexels-photo-776615.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/1020777/pexels-photo-1020777.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/5198239/pexels-photo-5198239.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/3769138/pexels-photo-3769138.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/1015568/pexels-photo-1015568.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/886521/pexels-photo-886521.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/2325447/pexels-photo-2325447.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/248159/pexels-photo-248159.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/1714208/pexels-photo-1714208.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/10629418/pexels-photo-10629418.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/7238309/pexels-photo-7238309.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/6757958/pexels-photo-6757958.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/6281880/pexels-photo-6281880.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/1078850/pexels-photo-1078850.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/1275393/pexels-photo-1275393.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/3039036/pexels-photo-3039036.jpeg?auto=compress&cs=tinysrgb&w=600',
+        'https://images.pexels.com/photos/12886800/pexels-photo-12886800.jpeg?auto=compress&cs=tinysrgb&w=600',
+         'https://images.pexels.com/photos/6757969/pexels-photo-6757969.jpeg?auto=compress&cs=tinysrgb&w=600',
+         'https://images.pexels.com/photos/6507744/pexels-photo-6507744.jpeg?auto=compress&cs=tinysrgb&w=600',
+
+    ];
   
     try {
       const response = await fetch(
@@ -34,13 +63,18 @@ async function generateJobRelatedBlogPost() {
       if (title.startsWith('Title: ')) {
         title = title.replace('Title: ', '');
       }
-    // Remove double quotes from the title
-    title = title.replace(/"/g, '');
+
+      // Remove double quotes from the title
+      title = title.replace(/"/g, '');
+
+      // Select a random thumbnail URL
+      const thumbnail = thumbnailUrls[Math.floor(Math.random() * thumbnailUrls.length)];
+
       const blogPost = {
         title: title,
         content: body.join('\n'),
         featured: "No",
-        thumbnail: "3.webp"
+        thumbnail: thumbnail
       };
 
       // Save the blog post to the database

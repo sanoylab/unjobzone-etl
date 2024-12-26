@@ -31,12 +31,12 @@ app.listen(PORT, async () => {
   //fetchAndProcessWfpJobVacancies()
   try {
     
-    await fetchAndProcessImfJobVacancies();
-    await fetchAndProcessUnhcrJobVacancies();
-    await fetchAndProcessWfpJobVacancies();
-    await fetchAndProcessInspiraJobVacancies();
-    await fetchAndProcessUndpJobVacancies();
-    await removeDuplicateJobVacancies();
+    // await fetchAndProcessImfJobVacancies();
+    // await fetchAndProcessUnhcrJobVacancies();
+    // await fetchAndProcessWfpJobVacancies();
+    // await fetchAndProcessInspiraJobVacancies();
+    // await fetchAndProcessUndpJobVacancies();
+    // await removeDuplicateJobVacancies();
     await generateJobRelatedBlogPost();
     
     console.log("All tasks completed successfully.");
