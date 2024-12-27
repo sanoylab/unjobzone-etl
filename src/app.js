@@ -37,7 +37,7 @@ app.listen(PORT, async () => {
     await fetchAndProcessInspiraJobVacancies();
     await fetchAndProcessUndpJobVacancies();
     await removeDuplicateJobVacancies();
-    await generateJobRelatedBlogPost();
+    //await generateJobRelatedBlogPost();
     
     console.log("All tasks completed successfully.");
   } catch (error) {
@@ -66,4 +66,8 @@ cron.schedule("0 21 * * *", async () => {
 });
 cron.schedule("0 20 * * *", () => {
   //fetchAndProcessUndpJobVacancies();
+});
+
+cron.schedule("0 0 * * 0", async () => {
+  await generateJobRelatedBlogPost();
 });
