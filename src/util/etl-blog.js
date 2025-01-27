@@ -4,7 +4,17 @@ const { credentials } = require("./db");
 
 async function generateJobRelatedBlogPost() {
     const apiKey = `${process.env.OPENAI_API_KEY}`; // Replace with your OpenAI API key
-    const prompt = 'Generate a job-related blog post with a title and body for international organization like United Nations. Please make the body of the text to be multiple paragraphs that holds htmml tags like p, h2, h3, ul, etc... and do not add any tag on the title (just plain text)';
+    const prompt = `
+    Generate a comprehensive blog post about 4 to 5 paragraph for an international organization, such as the United Nations, Job Application. The response should include:
+
+A catchy and professional title (plain text, no HTML tags).
+A detailed body of the blog post with the following structure, formatted with HTML tags:
+An introductory paragraph wrapped in <p> tags, providing an overview of the topic.
+Several sections with appropriate headings that delve into different aspects of the topic.
+Bullet points for listing relevant points or examples, where applicable.
+Closing remarks in a paragraph wrapped in <p> tags, summarizing the discussion or offering a call-to-action.
+Ensure the content is engaging, professional, and provides valuable insights related to international development, humanitarian work, or global collaboration. Avoid generic text and focus on delivering depth and specificity.
+    `;
     const thumbnailUrls = [
         'https://images.pexels.com/photos/313690/pexels-photo-313690.jpeg?auto=compress&cs=tinysrgb&w=600',
         'https://images.pexels.com/photos/327540/pexels-photo-327540.jpeg?auto=compress&cs=tinysrgb&w=600',
@@ -32,7 +42,6 @@ async function generateJobRelatedBlogPost() {
         'https://images.pexels.com/photos/12886800/pexels-photo-12886800.jpeg?auto=compress&cs=tinysrgb&w=600',
         'https://images.pexels.com/photos/6757969/pexels-photo-6757969.jpeg?auto=compress&cs=tinysrgb&w=600',
         'https://images.pexels.com/photos/6507744/pexels-photo-6507744.jpeg?auto=compress&cs=tinysrgb&w=600',
-
     ];
   
     try {
@@ -47,7 +56,7 @@ async function generateJobRelatedBlogPost() {
           body: JSON.stringify({
             model: 'gpt-4',
             messages: [{ role: 'system', content: prompt }],
-            max_tokens: 500,
+            max_tokens: 2048,
             n: 1,
             stop: null,
             temperature: 0.7,
@@ -58,7 +67,7 @@ async function generateJobRelatedBlogPost() {
       const data = await response.json();
       let generatedText = data.choices[0].message.content.trim();
       let [title, ...body] = generatedText.split('\n').filter(line => line.trim() !== '');
-
+      console.log('Generated blog post:', { title, body });
       // Remove "Title: " prefix if it exists
       if (title.startsWith('Title: ')) {
         title = title.replace('Title: ', '');

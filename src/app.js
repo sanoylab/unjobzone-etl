@@ -33,10 +33,10 @@ app.listen(PORT, async () => {
     
     await fetchAndProcessImfJobVacancies();
     await fetchAndProcessUnhcrJobVacancies();
-    await fetchAndProcessWfpJobVacancies();
-    await fetchAndProcessInspiraJobVacancies();
-    await fetchAndProcessUndpJobVacancies();
-    await removeDuplicateJobVacancies();
+     await fetchAndProcessWfpJobVacancies();
+     await fetchAndProcessInspiraJobVacancies();
+     await fetchAndProcessUndpJobVacancies();
+     await removeDuplicateJobVacancies();
     //await generateJobRelatedBlogPost();
     
     console.log("All tasks completed successfully.");
