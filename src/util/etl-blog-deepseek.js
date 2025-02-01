@@ -4,16 +4,15 @@ const { credentials } = require("./db");
 
 async function generateJobRelatedBlogPost() {
     const prompt = `
-    Generate a comprehensive blog post about 4 to 5 paragraph for an international organization, such as the United Nations, Job Application. The response should include:
+    Generate a comprehensive blog post about a job application for an international organization, such as the United Nations. The response should include:
 
-A catchy and professional title (plain text, no HTML tags).
-A detailed body of the blog post with the following structure, formatted with HTML tags:
+A catchy and professional title in plain text (no HTML tags).
+A detailed body of the blog post with the following HTML formatting:
 An introductory paragraph wrapped in <p> tags, providing an overview of the topic.
-Several sections with appropriate headings that delve into different aspects of the topic.
-Bullet points for listing relevant points or examples, where applicable.
-Closing remarks in a paragraph wrapped in <p> tags, summarizing the discussion or offering a call-to-action.
-Ensure the content is engaging, professional, and provides valuable insights related to international development, humanitarian work, or global collaboration. Avoid generic text and focus on delivering depth and specificity.
-    `;
+Several sections with appropriate <h3> or <h4> headings, discussing different aspects of the topic.
+Bullet points (<ul><li>...</li></ul>) to list relevant points or examples, where applicable.
+Closing remarks wrapped in <p> tags, summarizing the discussion or offering a call to action.
+Ensure the content is engaging, professional, and provides valuable insights related to international development, humanitarian work, or global collaboration. Avoid generic text—focus on delivering depth and specificity.`;
     const thumbnailUrls = [
         'https://images.pexels.com/photos/313690/pexels-photo-313690.jpeg?auto=compress&cs=tinysrgb&w=600',
         'https://images.pexels.com/photos/327540/pexels-photo-327540.jpeg?auto=compress&cs=tinysrgb&w=600',
@@ -81,7 +80,7 @@ Ensure the content is engaging, professional, and provides valuable insights rel
       fullResponse = fullResponse.replace(/<think>.*?<\/think>/gs, '').trim();
 
       // Extract title and body
-      const titleMatch = fullResponse.match(/\*\*(.*?)\*\*/);
+      const titleMatch = fullResponse.match(/title:\s*\*\*(.*?)\*\*/i);
       let title = '';
       let body = fullResponse;
 
