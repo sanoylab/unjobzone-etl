@@ -34,19 +34,20 @@ app.listen(PORT, async () => {
   //fetchAndProcessWfpJobVacancies()
   try {
     
-    // await fetchAndProcessImfJobVacancies();
-    // await fetchAndProcessUnhcrJobVacancies();
-    //  await fetchAndProcessWfpJobVacancies();
-    //  await fetchAndProcessInspiraJobVacancies();
-    //  await fetchAndProcessUndpJobVacancies();
-    //  await removeDuplicateJobVacancies();
+    await fetchAndProcessImfJobVacancies();
+    await fetchAndProcessUnhcrJobVacancies();
+     await fetchAndProcessWfpJobVacancies();
+     await fetchAndProcessInspiraJobVacancies();
+     await fetchAndProcessUndpJobVacancies();
+     await removeDuplicateJobVacancies();
 
   //  await generateJobRelatedBlogPost();
 
   //postExpiringSoonJobPostsToLinkedIn();
   //postJobNetworkPostsToLinkedIn("Information and Telecommunication Technology");
   //postJobNetworkPostsToLinkedIn("Political, Peace and Humanitarian");
-  postJobNetworkPostsToLinkedIn("Management and Administration");
+  //postJobNetworkPostsToLinkedIn("Management and Administration");
+  //postJobNetworkPostsToLinkedIn("Logistics, Transportation and Supply Chain");
 
     
     console.log("All tasks completed successfully.");
@@ -74,10 +75,64 @@ cron.schedule("0 21 * * *", async () => {
   await fetchAndProcessImfJobVacancies();
   await removeDuplicateJobVacancies();
 });
-cron.schedule("0 20 * * *", () => {
-  //fetchAndProcessUndpJobVacancies();
+cron.schedule("0 20 * * *", async () => {
+  await fetchAndProcessUndpJobVacancies();
+  await removeDuplicateJobVacancies();
 });
 
-cron.schedule("0 0 * * 0", async () => {
-  await generateJobRelatedBlogPost();
+// cron.schedule("0 0 * * 0", async () => {
+//   await generateJobRelatedBlogPost();
+// });
+
+
+cron.schedule("0 6 * * *", async () => {
+  console.log("Running postExpiringSoonJobPostsToLinkedIn...", new Date());
+  try {
+    await postExpiringSoonJobPostsToLinkedIn();
+    console.log("Successfully posted expiring soon job posts to LinkedIn.");
+  } catch (error) {
+    console.error("Error posting expiring soon job posts to LinkedIn:", error);
+  }
+});
+
+
+cron.schedule("0 7 * * *", async () => {
+  console.log("Running postExpiringSoonJobPostsToLinkedIn...", new Date());
+  try {
+    await postJobNetworkPostsToLinkedIn("Information and Telecommunication Technology");
+    console.log("Successfully posted IT job posts to LinkedIn.");
+  } catch (error) {
+    console.error("Error posting expiring soon job posts to LinkedIn:", error);
+  }
+});
+
+
+cron.schedule("0 8 * * *", async () => {
+  console.log("Running postExpiringSoonJobPostsToLinkedIn...", new Date());
+  try {
+    await postJobNetworkPostsToLinkedIn("Political, Peace and Humanitarian");
+    console.log("Successfully posted Political, Peace and Humanitarian job posts to LinkedIn.");
+  } catch (error) {
+    console.error("Error posting expiring soon job posts to LinkedIn:", error);
+  }
+});
+
+cron.schedule("0 9 * * *", async () => {
+  console.log("Running postJobNetworkPostsToLinkedIn...", new Date());
+  try {
+    await postJobNetworkPostsToLinkedIn("Management and Administration");
+    console.log("Successfully posted Management and Administration job posts to LinkedIn.");
+  } catch (error) {
+    console.error("Error posting expiring soon job posts to LinkedIn:", error);
+  }
+});
+
+cron.schedule("0 10 * * *", async () => {
+  console.log("Running postJobNetworkPostsToLinkedIn...", new Date());
+  try {
+    await postJobNetworkPostsToLinkedIn("Logistics, Transportation and Supply Chain");
+    console.log("Successfully posted Logistics, Transportation and Supply Chain job posts to LinkedIn.");
+  } catch (error) {
+    console.error("Error posting expiring soon job posts to LinkedIn:", error);
+  }
 });
