@@ -4,3 +4,4 @@ node_modules
 azure-pipeline-prod.yml
 azure-pipeline-dev.yml
 src/util/swagger.js
+note.txt
