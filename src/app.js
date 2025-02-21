@@ -18,6 +18,7 @@ const {
 const { removeDuplicateJobVacancies } = require("./util/shared");
 
 const { fetchOrganizationList } = require("./util/etl-org");
+const { postExpiringSoonJobPostsToLinkedIn, postJobNetworkPostsToLinkedIn } = require("./util/social-media");
 
 const PORT = process.env.PORT;
 
@@ -33,13 +34,20 @@ app.listen(PORT, async () => {
   //fetchAndProcessWfpJobVacancies()
   try {
     
-    await fetchAndProcessImfJobVacancies();
-    await fetchAndProcessUnhcrJobVacancies();
-     await fetchAndProcessWfpJobVacancies();
-     await fetchAndProcessInspiraJobVacancies();
-     await fetchAndProcessUndpJobVacancies();
-     await removeDuplicateJobVacancies();
+    // await fetchAndProcessImfJobVacancies();
+    // await fetchAndProcessUnhcrJobVacancies();
+    //  await fetchAndProcessWfpJobVacancies();
+    //  await fetchAndProcessInspiraJobVacancies();
+    //  await fetchAndProcessUndpJobVacancies();
+    //  await removeDuplicateJobVacancies();
+
   //  await generateJobRelatedBlogPost();
+
+  //postExpiringSoonJobPostsToLinkedIn();
+  //postJobNetworkPostsToLinkedIn("Information and Telecommunication Technology");
+  //postJobNetworkPostsToLinkedIn("Political, Peace and Humanitarian");
+  postJobNetworkPostsToLinkedIn("Management and Administration");
+
     
     console.log("All tasks completed successfully.");
   } catch (error) {
