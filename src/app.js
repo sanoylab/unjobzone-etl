@@ -34,20 +34,21 @@ app.listen(PORT, async () => {
   //fetchAndProcessWfpJobVacancies()
   try {
     
-    await fetchAndProcessImfJobVacancies();
-    await fetchAndProcessUnhcrJobVacancies();
-     await fetchAndProcessWfpJobVacancies();
-     await fetchAndProcessInspiraJobVacancies();
-     await fetchAndProcessUndpJobVacancies();
-     await removeDuplicateJobVacancies();
+    // await fetchAndProcessImfJobVacancies();
+    // await fetchAndProcessUnhcrJobVacancies();
+    //  await fetchAndProcessWfpJobVacancies();
+    //  await fetchAndProcessInspiraJobVacancies();
+    //  await fetchAndProcessUndpJobVacancies();
+    //  await removeDuplicateJobVacancies();
 
   //  await generateJobRelatedBlogPost();
 
   //postExpiringSoonJobPostsToLinkedIn();
-  //postJobNetworkPostsToLinkedIn("Information and Telecommunication Technology");
-  //postJobNetworkPostsToLinkedIn("Political, Peace and Humanitarian");
-  //postJobNetworkPostsToLinkedIn("Management and Administration");
+ // postJobNetworkPostsToLinkedIn("Rule of Law, Security and Human Rights");
+ postJobNetworkPostsToLinkedIn("Political, Peace and Humanitarian");
+ // postJobNetworkPostsToLinkedIn("Management and Administration");
   //postJobNetworkPostsToLinkedIn("Logistics, Transportation and Supply Chain");
+ // postJobNetworkPostsToLinkedIn("Information and Telecommunication Technology");
 
     
     console.log("All tasks completed successfully.");
