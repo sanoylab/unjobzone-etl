@@ -45,7 +45,7 @@ app.listen(PORT, async () => {
 
   //postExpiringSoonJobPostsToLinkedIn();
  // postJobNetworkPostsToLinkedIn("Rule of Law, Security and Human Rights");
- postJobNetworkPostsToLinkedIn("Political, Peace and Humanitarian");
+ //postJobNetworkPostsToLinkedIn("Political, Peace and Humanitarian");
  // postJobNetworkPostsToLinkedIn("Management and Administration");
   //postJobNetworkPostsToLinkedIn("Logistics, Transportation and Supply Chain");
  // postJobNetworkPostsToLinkedIn("Information and Telecommunication Technology");
@@ -57,26 +57,26 @@ app.listen(PORT, async () => {
   }
 });
 
-cron.schedule("0 0 * * *", async() => {
+cron.schedule("0 1 * * *", async() => {
   console.log("Running scheduled tasks...", new Date());
-  await fetchAndProcessJobVacancies();
-  await removeDuplicateJobVacancies();
-});
-
-cron.schedule("0 23 * * *", async () => {
-  await fetchAndProcessWfpJobVacancies();
-  await removeDuplicateJobVacancies();
-});
-
-cron.schedule("0 22 * * *", async() => {
-  await fetchAndProcessUnhcrJobVacancies();
-  await removeDuplicateJobVacancies();
-});
-cron.schedule("0 21 * * *", async () => {
   await fetchAndProcessImfJobVacancies();
   await removeDuplicateJobVacancies();
 });
-cron.schedule("0 20 * * *", async () => {
+
+cron.schedule("0 2 * * *", async () => {
+  await fetchAndProcessUnhcrJobVacancies();
+  await removeDuplicateJobVacancies();
+});
+
+cron.schedule("0 3 * * *", async() => {
+  await fetchAndProcessWfpJobVacancies();
+  await removeDuplicateJobVacancies();
+});
+cron.schedule("0 4 * * *", async () => {
+  await fetchAndProcessInspiraJobVacancies();
+  await removeDuplicateJobVacancies();
+});
+cron.schedule("0 5 * * *", async () => {
   await fetchAndProcessUndpJobVacancies();
   await removeDuplicateJobVacancies();
 });
