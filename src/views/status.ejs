@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/boxicons@2.0.7/css/boxicons.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --success-color: #1cc88a;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --secondary-color: #858796;
+        }
+        
+        body {
+            background-color: #f8f9fc;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #224abe 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            border: none;
+            border-radius: 0.75rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            background: white;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1rem 1.25rem;
+            font-weight: bold;
+            color: #4e73df;
+        }
+
+        .stats-card {
+            border-left: 0.25rem solid;
+            transition: transform 0.2s;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .stats-card.total { border-left-color: var(--primary-color); }
+        .stats-card.active { border-left-color: var(--success-color); }
+        .stats-card.closed { border-left-color: var(--danger-color); }
+
+        .stats-card .card-body {
+            padding: 1.25rem;
+        }
+
+        .stats-card .stat-label {
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .stats-card .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #5a5c69;
+            margin-bottom: 0;
+        }
+
+        .update-item {
+            padding: 1rem;
+            border-left: 3px solid var(--primary-color);
+            margin-bottom: 0.5rem;
+            background: white;
+            transition: transform 0.2s;
+        }
+
+        .update-item:hover {
+            transform: translateX(5px);
+        }
+
+        .time-ago {
+            font-size: 0.85rem;
+            color: var(--secondary-color);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 1.5rem;
+        }
+
+        .refresh-timer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .org-badge {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 1rem;
+            margin-right: 0.5rem;
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 1rem;
+        }
+
+        .update-note {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header">
+        <div class="container">
+            <h1 class="mb-0"><i class='bx bxs-dashboard'></i> <%= title %></h1>
+            <p class="mb-0 mt-2 text-light">Last updated: <%= new Date().toLocaleString() %></p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Summary Stats -->
+        <div class="row">
+            <% 
+            const totalJobs = jobStats.reduce((acc, stat) => acc + parseInt(stat.count), 0);
+            const activeJobs = jobStats.filter(stat => stat.status === 'active').reduce((acc, stat) => acc + parseInt(stat.count), 0);
+            const closedJobs = totalJobs - activeJobs;
+            %>
+            <div class="col-xl-4 col-md-6">
+                <div class="card stats-card total">
+                    <div class="card-body">
+                        <div class="stat-label">Total Jobs</div>
+                        <div class="stat-value">
+                            <i class='bx bx-briefcase'></i> <%= totalJobs %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4 col-md-6">
+                <div class="card stats-card active">
+                    <div class="card-body">
+                        <div class="stat-label">Active Jobs</div>
+                        <div class="stat-value">
+                            <i class='bx bx-check-circle'></i> <%= activeJobs %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4 col-md-6">
+                <div class="card stats-card closed">
+                    <div class="card-body">
+                        <div class="stat-label">Closed Jobs</div>
+                        <div class="stat-value">
+                            <i class='bx bx-x-circle'></i> <%= closedJobs %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Jobs by Organization Chart -->
+            <div class="col-xl-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class='bx bx-bar-chart'></i> Jobs by Organization
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="orgChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active vs Closed Chart -->
+            <div class="col-xl-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class='bx bx-pie-chart'></i> Job Status Distribution
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Organization Stats Table -->
+        <div class="card">
+            <div class="card-header">
+                <i class='bx bx-list-ul'></i> Organization Statistics
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Organization</th>
+                                <th>Status</th>
+                                <th>Count</th>
+                                <th>Last Created</th>
+                                <th>Last Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% jobStats.forEach(function(stat) { %>
+                            <tr>
+                                <td>
+                                    <span class="org-badge bg-primary">
+                                        <%= stat.data_source.toUpperCase() %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge <%= stat.status === 'active' ? 'bg-success' : 'bg-danger' %>">
+                                        <%= stat.status %>
+                                    </span>
+                                </td>
+                                <td><%= stat.count %></td>
+                                <td><%= new Date(stat.last_created).toLocaleString() %></td>
+                                <td><%= stat.last_updated ? new Date(stat.last_updated).toLocaleString() : 'N/A' %></td>
+                            </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Updates -->
+        <div class="card">
+            <div class="card-header">
+                <i class='bx bx-history'></i> Recent Updates
+            </div>
+            <div class="card-body">
+                <% recentUpdates.forEach(function(update) { %>
+                <div class="update-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1"><%= update.job_title %></h6>
+                            <div>
+                                <span class="org-badge bg-secondary">
+                                    <%= update.data_source.toUpperCase() %>
+                                </span>
+                                <span class="status-badge <%= update.status === 'active' ? 'bg-success' : 'bg-danger' %>">
+                                    <%= update.status %>
+                                </span>
+                            </div>
+                            <div class="update-note">
+                                <%= update.notes %>
+                            </div>
+                        </div>
+                        <small class="time-ago">
+                            <%= new Date(update.updated_at).toLocaleString() %>
+                        </small>
+                    </div>
+                </div>
+                <% }); %>
+            </div>
+        </div>
+    </div>
+
+    <div class="refresh-timer">
+        <i class='bx bx-refresh'></i> Refreshing in <span id="countdown">300</span>s
+    </div>
+
+    <script>
+        // Prepare data for charts
+        const orgData = {};
+        const statusData = { active: 0, closed: 0 };
+        
+        <% jobStats.forEach(function(stat) { %>
+            if (!orgData['<%= stat.data_source %>']) {
+                orgData['<%= stat.data_source %>'] = 0;
+            }
+            orgData['<%= stat.data_source %>'] += <%= stat.count %>;
+            
+            if ('<%= stat.status %>' === 'active') {
+                statusData.active += <%= stat.count %>;
+            } else {
+                statusData.closed += <%= stat.count %>;
+            }
+        <% }); %>
+
+        // Organization Chart
+        new Chart(document.getElementById('orgChart'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(orgData).map(key => key.toUpperCase()),
+                datasets: [{
+                    label: 'Number of Jobs',
+                    data: Object.values(orgData),
+                    backgroundColor: [
+                        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Status Distribution Chart
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Active', 'Closed'],
+                datasets: [{
+                    data: [statusData.active, statusData.closed],
+                    backgroundColor: ['#1cc88a', '#e74a3b'],
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Countdown timer
+        let countdown = 300;
+        const countdownElement = document.getElementById('countdown');
+        
+        setInterval(() => {
+            countdown--;
+            countdownElement.textContent = countdown;
+            if (countdown <= 0) {
+                window.location.reload();
+            }
+        }, 1000);
+    </script>
+</body>
+</html> 

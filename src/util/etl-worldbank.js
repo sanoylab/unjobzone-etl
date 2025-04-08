@@ -1,145 +1,151 @@
 require("dotenv").config();
 
-const { Client } = require('pg');
-const { credentials } = require("./db");
-const { getOrganizationId } = require("./shared");
+const pool = require("./db");
+const logger = require("./logger");
+const JobTracker = require("./job-tracker");
 
-const url = 'https://us.api.csod.com/rec-job-search/external/jobs'; // Replace with your API endpoint
-
-// Function to fetch and process job vacancies
 async function fetchAndProcessWorldBankJobVacancies() {
-    console.log("World Bank Job Vacancies ETL started...");
+  const startTime = new Date();
+  console.log("\n" + "=".repeat(80));
+  console.log("🏦 Starting World Bank Jobs ETL Process");
+  console.log(`⏰ Start Time: ${startTime.toISOString()}`);
+  console.log("=".repeat(80) + "\n");
 
-    const client = new Client(credentials);
+  const client = await pool.connect();
+  let newJobs = 0;
+  let updatedJobs = 0;
+  let closedJobs = 0;
+  let totalProcessed = 0;
 
-    await client.connect();
-    await client.query(`DELETE FROM job_vacancies WHERE data_source = 'worldbank'`);
+  try {
+    const jobTracker = new JobTracker(client);
+    await jobTracker.initializeRun("World Bank");
 
-    let page = 0;
-    const itemsPerPage = 25; // items per page
-    let totalPages = 1; // Initialize to 1 to enter the loop
+    const response = await fetch(
+      "https://www.worldbank.org/en/about/careers/search?api=true&format=json&rows=1000"
+    );
+    const data = await response.json();
 
-    while (page < totalPages) {
-
-        const payload = {   
-            
-            careerSiteId: 1,
-            careerSitePageId:1,
-            cities: [],
-            countryCodes:[],
-            cultureId: 1,
-            cultureName: "en-US",
-            customFieldCheckboxKeys: [],
-            customFieldDropdowns: [],
-            customFieldRadios: [],
-            pageNumber:1,
-            pageSize: 25,
-            placeID: "",
-            postingsWithinDays: null,
-            radius: null,
-            searchText: "",
-            states: [],
-            search: "", // empty keyword as per the payload you provided
-
-           
-        };
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${process.env.WORLDBANK_API_KEY}`
-                },
-                body: JSON.stringify(payload)
-            });
-            //console.log('response', response)
-          
-            
-
-            const data = await response.json();
-            //console.log('data', data)
-
-            totalPages = Math.ceil(data.data.totalCount / 25);
-            //console.log('totalPages', totalPages)
-
-
-           
-             for (const job of data.data.requisitions) {
-                 const jobDetailAPI = `https://worldbankgroup.csod.com/services/x/job-requisition/v2/requisitions/${job.requisitionId}/jobDetails?cultureId=1`;
-
-                 const responseDetail = await fetch(jobDetailAPI, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${process.env.WORLDBANK_API_KEY}`,
-                        'Accept': 'application/json; q=1.0, text/*; q=0.8, */*; q=0.1',
-                        'Accept-Encoding': 'gzip, deflate, br, zstd',
-                        'Accept-Language': 'en-US,en;q=0.9',
-                        'Cache-Control': 'no-cache',
-                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                const responseText = await responseDetail.text();
-                console.log('responseText', responseText);
-
-                  const jobDetail = await responseDetail.json();
-                  console.log('jobDetail', jobDetail)
-                
-            //     const startDate = jobDetail.items[0].ExternalPostedStartDate ? new Date(jobDetail.items[0].ExternalPostedStartDate) : null;
-            //     const endDate = jobDetail.items[0].ExternalPostedEndDate ? new Date(jobDetail.items[0].ExternalPostedEndDate) : null;
-
-            //     const requisitionFlexFields = jobDetail.items[0].requisitionFlexFields || [];
-
-            //     const agency = requisitionFlexFields[0] && requisitionFlexFields[0].Prompt === "Agency" ? requisitionFlexFields[0].Value : 'UNDP';
-            //     const practiceArea = requisitionFlexFields[3] && requisitionFlexFields[3].Prompt === "Practice Area" ? requisitionFlexFields[3].Value : '';
-            //     const grade = requisitionFlexFields[1] && requisitionFlexFields[1].Prompt === "Grade" ? requisitionFlexFields[1].Value : '';
-
-                
-            //     const query = `
-            //         INSERT INTO job_vacancies (job_id, language, category_code, job_title, job_code_title, job_description,
-            //             job_family_code, job_level, duty_station, recruitment_type, start_date, end_date, dept,
-            //             total_count, jn, jf, jc, jl, created, data_source, organization_id, apply_link)
-            //         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
-            //         RETURNING id;
-            //     `;
-            //     const orgId = await getOrganizationId(agency); // Get organization id
-
-                
-            //     await client.query(query, [
-            //         job.Id,
-            //         job.Language,
-            //         jobDetail.items[0].Category,
-            //         job.Title,
-            //         job.JobFunction,
-            //         jobDetail.items[0].ExternalDescriptionStr,
-            //         job.JobFamily,
-            //         '', // job level
-            //        job.PrimaryLocation || '' , // Convert duty station to JSON string
-            //         jobDetail.items[0].RequisitionType,
-            //         startDate, // Convert to Date object
-            //         endDate, // Convert to Date object
-            //         agency,
-            //         null,
-            //         practiceArea,
-            //         '',
-            //         '',
-            //         grade,
-            //         new Date(),
-            //         'undp',
-            //         orgId,
-            //         "https://estm.fa.em2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/" + job.Id
-            //     ]);
-            //     console.log(job.Title); // Handle the response data here
-            }
-
-            page++; // Move to the next page
-        } catch (error) {
-            console.error('Error fetching or saving data:', error);
-        }
+    if (!data || !data.response || !data.response.docs) {
+      throw new Error("Invalid response format from World Bank API");
     }
 
-    await client.end(); // Close the database connection
+    const jobs = data.response.docs;
+    console.log(`📊 Processing ${jobs.length} World Bank job vacancies...\n`);
+
+    for (const job of jobs) {
+      totalProcessed++;
+      const jobData = {
+        job_id: job.id.toString(),
+        title: job.title,
+        organization_id: 7, // World Bank
+        grade: job.grade || "",
+        duty_station: job.location || "",
+        posting_url: `https://worldbank.org/en/about/careers/search?api=true&format=json&rows=1000${job.id}`,
+        opening_date: job.opendate ? new Date(job.opendate) : null,
+        closing_date: job.closedate ? new Date(job.closedate) : null,
+        status: "active"
+      };
+
+      // Check if job exists and if it needs updating
+      const existingJob = await client.query(
+        "SELECT job_id, title, grade, duty_station, closing_date FROM job_vacancies WHERE job_id = $1 AND organization_id = 7",
+        [jobData.job_id]
+      );
+
+      if (existingJob.rows.length === 0) {
+        await client.query(
+          `INSERT INTO job_vacancies 
+          (job_id, title, organization_id, grade, duty_station, posting_url, opening_date, closing_date, status, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
+          [
+            jobData.job_id,
+            jobData.title,
+            jobData.organization_id,
+            jobData.grade,
+            jobData.duty_station,
+            jobData.posting_url,
+            jobData.opening_date,
+            jobData.closing_date,
+            jobData.status
+          ]
+        );
+        newJobs++;
+        console.log(`✨ New job added: ${jobData.title}`);
+      } else {
+        const existing = existingJob.rows[0];
+        if (
+          existing.title !== jobData.title ||
+          existing.grade !== jobData.grade ||
+          existing.duty_station !== jobData.duty_station ||
+          existing.closing_date?.toISOString() !== jobData.closing_date?.toISOString()
+        ) {
+          await client.query(
+            `UPDATE job_vacancies 
+            SET title = $2, grade = $3, duty_station = $4, closing_date = $5, updated_at = NOW()
+            WHERE job_id = $1 AND organization_id = 7`,
+            [
+              jobData.job_id,
+              jobData.title,
+              jobData.grade,
+              jobData.duty_station,
+              jobData.closing_date
+            ]
+          );
+          updatedJobs++;
+          console.log(`📝 Updated job: ${jobData.title}`);
+        }
+      }
+
+      // Show progress
+      if (totalProcessed % 10 === 0) {
+        console.log(`⏳ Processed ${totalProcessed}/${jobs.length} jobs...`);
+      }
+    }
+
+    // Mark jobs as closed if they have expired
+    const result = await client.query(
+      `UPDATE job_vacancies 
+       SET status = 'closed',
+           notes = 'Job has expired',
+           updated_at = NOW()
+       WHERE organization_id = 7 
+       AND end_date < NOW()
+       AND status = 'active'
+       RETURNING job_id`
+    );
+    closedJobs = result.rowCount;
+
+    await jobTracker.completeRun("World Bank", {
+      total_processed: totalProcessed,
+      new_jobs: newJobs,
+      updated_jobs: updatedJobs,
+      closed_jobs: closedJobs
+    });
+
+    const endTime = new Date();
+    const duration = (endTime - startTime) / 1000;
+
+    console.log("\n" + "=".repeat(80));
+    console.log("📊 World Bank Jobs ETL Process Summary");
+    console.log("=".repeat(80));
+    console.log(`✨ New jobs added: ${newJobs}`);
+    console.log(`📝 Jobs updated: ${updatedJobs}`);
+    console.log(`🔒 Jobs closed: ${closedJobs}`);
+    console.log(`📦 Total jobs processed: ${totalProcessed}`);
+    console.log(`⏱️ Duration: ${duration.toFixed(2)} seconds`);
+    console.log(`⏰ End Time: ${endTime.toISOString()}`);
+    console.log("=".repeat(80) + "\n");
+
+  } catch (error) {
+    console.error("❌ Error in World Bank ETL process:", error);
+    logger.error("Error in World Bank ETL process", { error });
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
-module.exports = { fetchAndProcessWorldBankJobVacancies };
+module.exports = {
+  fetchAndProcessWorldBankJobVacancies
+};

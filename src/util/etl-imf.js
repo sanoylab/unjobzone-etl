@@ -3,110 +3,212 @@ require("dotenv").config();
 const { Client } = require("pg");
 const { credentials } = require("./db");
 const { getOrganizationId } = require("./shared");
+const logger = require("./logger");
 
-const url = "https://imf.wd5.myworkdayjobs.com/wday/cxs/imf/IMF/jobs"; // Replace with your API endpoint
+const url = "https://imf.wd5.myworkdayjobs.com/wday/cxs/imf/IMF/jobs";
 
-// Function to fetch and process job vacancies
 async function fetchAndProcessImfJobVacancies() {
-  console.log("==================================");
-  console.log("IMF Job Vacancies ETL started...");
-  console.log("==================================");
+  const startTime = new Date();
+  console.log("\n" + "=".repeat(80));
+  console.log("🌐 IMF (INTERNATIONAL MONETARY FUND) ETL PROCESS");
+  console.log(`⏰ Start Time: ${startTime.toISOString()}`);
+  console.log("=".repeat(80) + "\n");
+
+  let newJobs = 0;
+  let updatedJobs = 0;
+  let totalProcessed = 0;
   const client = new Client(credentials);
 
-  await client.connect();
-  await client.query(`DELETE FROM job_vacancies WHERE data_source = 'imf'`);
+  try {
+    await client.connect();
+    console.log("✅ Database connection established");
 
-  let page = 0;
-  const itemsPerPage = 20; // items per page
-  let totalPages = 1; // Initialize to 1 to enter the loop
+    // Get existing active jobs
+    const existingJobs = await client.query(
+      'SELECT job_id, job_title, end_date FROM job_vacancies WHERE data_source = $1 AND status = $2',
+      ['imf', 'active']
+    );
+    const existingJobMap = new Map(existingJobs.rows.map(row => [row.job_id, row]));
+    console.log(`📊 Found ${existingJobs.rows.length} existing active jobs`);
 
-  while (page < totalPages) {
-    const payload = {
-      "appliedFacets": {},
-      "limit": itemsPerPage,
-      "offset": page * itemsPerPage,
-      "searchText": ""
-    };
+    let page = 0;
+    const itemsPerPage = 20;
+    let totalPages = 1;
 
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+    while (page < totalPages) {
+      const payload = {
+        "appliedFacets": {},
+        "limit": itemsPerPage,
+        "offset": page * itemsPerPage,
+        "searchText": ""
+      };
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (totalPages === 1) {
+          totalPages = Math.ceil(data.total / itemsPerPage);
+          console.log(`📑 Total pages to process: ${totalPages}`);
+        }
+
+        for (const job of data.jobPostings) {
+          totalProcessed++;
+          const jobDetailAPI = `https://imf.wd5.myworkdayjobs.com/wday/cxs/imf/IMF${job.externalPath}`;
+
+          try {
+            const responseDetail = await fetch(jobDetailAPI);
+            const jobDetail = await responseDetail.json();
+
+            const startDate = jobDetail.jobPostingInfo.startDate
+              ? new Date(jobDetail.jobPostingInfo.startDate)
+              : null;
+            const endDate = jobDetail.jobPostingInfo.endDate
+              ? new Date(jobDetail.jobPostingInfo.endDate)
+              : null;
+
+            const orgId = await getOrganizationId("IMF");
+            const jobId = jobDetail.jobPostingInfo.id;
+            const existingJob = existingJobMap.get(jobId);
+
+            if (!existingJob) {
+              // Insert new job
+              await client.query(`
+                INSERT INTO job_vacancies (
+                  job_id, language, category_code, job_title, job_code_title, job_description,
+                  job_family_code, job_level, duty_station, recruitment_type, start_date, end_date, dept,
+                  total_count, jn, jf, jc, jl, created, data_source, organization_id, apply_link, status
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+              `, [
+                jobId,
+                "EN",
+                job.bulletFields[0],
+                job.title,
+                jobDetail.jobPostingInfo.jobPostingId,
+                jobDetail.jobPostingInfo.jobDescription,
+                "", // jobFamilyCode
+                "", // jobLevel
+                jobDetail.jobPostingInfo.location,
+                jobDetail.jobPostingInfo.timeType,
+                startDate,
+                endDate,
+                jobDetail.hiringOrganization.name || "",
+                job.total,
+                "", // jn
+                "", // jf
+                "", // jc
+                "", // jl
+                new Date(),
+                "imf",
+                orgId,
+                "https://imf.wd5.myworkdayjobs.com/en-US/IMF/details/" + jobDetail.jobPostingInfo.jobPostingId,
+                "active"
+              ]);
+              newJobs++;
+              console.log(`✨ New job added: ${job.title}`);
+            } else if (
+              existingJob.job_title !== job.title ||
+              existingJob.end_date?.toISOString() !== endDate?.toISOString()
+            ) {
+              // Update existing job
+              await client.query(`
+                UPDATE job_vacancies 
+                SET job_title = $1, job_description = $2, end_date = $3, 
+                    duty_station = $4, updated_at = NOW()
+                WHERE job_id = $5 AND data_source = $6
+              `, [
+                job.title,
+                jobDetail.jobPostingInfo.jobDescription,
+                endDate,
+                jobDetail.jobPostingInfo.location,
+                jobId,
+                'imf'
+              ]);
+              updatedJobs++;
+              console.log(`📝 Updated job: ${job.title}`);
+            }
+
+            // Remove from map to track which jobs are still active
+            existingJobMap.delete(jobId);
+
+          } catch (jobError) {
+            console.error(`❌ Error processing job ${job.title}:`, jobError.message);
+            logger.error("Error processing individual job", {
+              error: jobError,
+              jobTitle: job.title,
+              jobId: jobDetail?.jobPostingInfo?.id
+            });
+          }
+
+          // Show progress
+          if (totalProcessed % 10 === 0) {
+            console.log(`⏳ Processed ${totalProcessed} jobs...`);
+          }
+        }
+
+        page++;
+      } catch (pageError) {
+        console.error("❌ Error processing page:", pageError.message);
+        logger.error("Error processing page", {
+          error: pageError,
+          page,
+          totalPages
+        });
+        page++; // Move to next page despite error
       }
-
-      const data = await response.json();
-
-      if (totalPages == 1) {
-        totalPages = Math.ceil(data.total / itemsPerPage);
-      }
-
-      // Save data to PostgreSQL database
-      for (const job of data.jobPostings) {
-        var jobDetailAPI = `https://imf.wd5.myworkdayjobs.com/wday/cxs/imf/IMF${job.externalPath}`;
-
-        const responseDetail = await fetch(jobDetailAPI);
-        const jobDetail = await responseDetail.json();
-
-        console.log(job.title);
-
-        const startDate = jobDetail.jobPostingInfo.startDate
-          ? new Date(jobDetail.jobPostingInfo.startDate)
-          : null;
-        const endDate = jobDetail.jobPostingInfo.endDate
-          ? new Date(jobDetail.jobPostingInfo.endDate)
-          : null;
-
-        // Prepare the insert query
-        const query = `
-          INSERT INTO job_vacancies (job_id, language, category_code, job_title, job_code_title, job_description,
-              job_family_code, job_level, duty_station, recruitment_type, start_date, end_date, dept,
-              total_count, jn, jf, jc, jl, created, data_source, organization_id, apply_link)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
-          RETURNING id;
-        `;
-        const orgId = await getOrganizationId("IMF"); // Get organization id
-
-        // Insert the job vacancy into the database
-        await client.query(query, [
-          jobDetail.jobPostingInfo.id,
-          "EN",
-          job.bulletFields[0],
-          job.title,
-          jobDetail.jobPostingInfo.jobPostingId,
-          jobDetail.jobPostingInfo.jobDescription,
-          "", // jobFamilyCode,
-          "", // jobLevel,
-          jobDetail.jobPostingInfo.location, // Convert duty station to JSON string
-          jobDetail.jobPostingInfo.timeType,
-          startDate, // Convert to Date object
-          endDate, // Convert to Date object
-          jobDetail.hiringOrganization.name || "", // Check if dept is defined
-          job.total,
-          "", // Check if jn is defined
-          "",
-          "",
-          "",
-          new Date(),
-          "imf",
-          orgId, 
-          "https://imf.wd5.myworkdayjobs.com/en-US/IMF/details/"+jobDetail.jobPostingInfo.jobPostingId
-        ]);
-      }
-
-      page++; // Move to the next page
-    } catch (error) {
-      console.error("Error fetching or saving data:", error);
     }
-  }
 
-  await client.end(); // Close the database connection
+    // Mark jobs as closed if they have expired
+    const closedJobs = await client.query(
+        `UPDATE job_vacancies 
+         SET status = 'closed', 
+             notes = 'Job has expired',
+             updated_at = NOW()
+         WHERE data_source = 'imf' 
+         AND end_date < NOW() 
+         AND status = 'active'`
+    );
+
+    const endTime = new Date();
+    const duration = (endTime - startTime) / 1000;
+
+    console.log("\n" + "=".repeat(80));
+    console.log("📊 IMF Jobs ETL Process Summary");
+    console.log("=".repeat(80));
+    console.log(`✨ New jobs added: ${newJobs}`);
+    console.log(`📝 Jobs updated: ${updatedJobs}`);
+    console.log(`🔒 Jobs closed: ${existingJobMap.size}`);
+    console.log(`📦 Total jobs processed: ${totalProcessed}`);
+    console.log(`⏱️ Duration: ${duration.toFixed(2)} seconds`);
+    console.log(`⏰ End Time: ${endTime.toISOString()}`);
+    console.log("=".repeat(80) + "\n");
+
+  } catch (error) {
+    console.error("❌ Error in IMF ETL process:", error.message);
+    logger.error("Error in IMF ETL process", {
+      error,
+      stats: {
+        totalProcessed,
+        newJobs,
+        updatedJobs
+      }
+    });
+    throw error;
+  } finally {
+    await client.end();
+    console.log("✅ Database connection closed");
+  }
 }
 
 module.exports = { fetchAndProcessImfJobVacancies };
