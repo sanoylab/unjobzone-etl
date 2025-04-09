@@ -922,3 +922,19 @@
 {"level":"info","message":"ETL Server started on PORT: 3001","timestamp":"2025-04-09T12:17:15.520Z"}
 {"level":"info","message":"Running initial tasks...","timestamp":"2025-04-09T12:17:15.522Z"}
 {"duration":460,"level":"info","message":"Executed query","rows":1,"text":"INSERT INTO job_executions (job_name, status, start_time) VALUES ($1, $2, $3) RETURNING id","timestamp":"2025-04-09T12:17:15.982Z"}
+{"level":"info","message":"ETL Server started on PORT: 3001","timestamp":"2025-04-09T15:35:15.546Z"}
+{"level":"info","message":"Running initial tasks...","timestamp":"2025-04-09T15:35:15.547Z"}
+{"duration":524,"level":"info","message":"Executed query","rows":1,"text":"INSERT INTO job_executions (job_name, status, start_time) VALUES ($1, $2, $3) RETURNING id","timestamp":"2025-04-09T15:35:16.072Z"}
+{"error":{},"level":"error","message":"Error in IMF ETL process","stats":{"newJobs":0,"totalProcessed":22,"updatedJobs":0},"timestamp":"2025-04-09T15:35:25.254Z"}
+{"duration":47,"level":"info","message":"Executed query","rows":1,"text":"UPDATE job_executions SET status = $1, end_time = $2, error_message = $3 WHERE id = $4","timestamp":"2025-04-09T15:35:25.339Z"}
+{"error":{},"level":"error","message":"Error in IMF Jobs","timestamp":"2025-04-09T15:35:25.340Z"}
+{"error":{},"level":"error","message":"Error running initial tasks","timestamp":"2025-04-09T15:35:25.341Z"}
+{"level":"info","message":"ETL Server started on PORT: 3001","timestamp":"2025-04-09T15:35:51.942Z"}
+{"level":"info","message":"Running initial tasks...","timestamp":"2025-04-09T15:35:51.943Z"}
+{"duration":380,"level":"info","message":"Executed query","rows":1,"text":"INSERT INTO job_executions (job_name, status, start_time) VALUES ($1, $2, $3) RETURNING id","timestamp":"2025-04-09T15:35:52.324Z"}
+{"level":"info","message":"ETL Server started on PORT: 3001","timestamp":"2025-04-09T15:35:56.088Z"}
+{"level":"info","message":"Running initial tasks...","timestamp":"2025-04-09T15:35:56.090Z"}
+{"duration":384,"level":"info","message":"Executed query","rows":1,"text":"INSERT INTO job_executions (job_name, status, start_time) VALUES ($1, $2, $3) RETURNING id","timestamp":"2025-04-09T15:35:56.474Z"}
+{"duration":49,"level":"info","message":"Executed query","rows":1,"text":"UPDATE job_executions SET status = $1, end_time = $2, error_message = $3 WHERE id = $4","timestamp":"2025-04-09T15:36:06.045Z"}
+{"level":"info","message":"Successfully completed IMF Jobs","timestamp":"2025-04-09T15:36:06.046Z"}
+{"duration":45,"level":"info","message":"Executed query","rows":1,"text":"INSERT INTO job_executions (job_name, status, start_time) VALUES ($1, $2, $3) RETURNING id","timestamp":"2025-04-09T15:36:06.091Z"}

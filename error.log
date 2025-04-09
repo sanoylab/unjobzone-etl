@@ -141,3 +141,6 @@
 {"error":{"path":"/Users/yonasyeneneh/Workspace/un-job-zone-project/unjobzone-etl-cursor/src/views/error.ejs"},"level":"error","message":"Unhandled error","timestamp":"2025-04-08T20:10:16.093Z"}
 {"level":"error","message":"Error loading status page: job_tracking table is missing. Please run migrations first.","stack":"Error: job_tracking table is missing. Please run migrations first.\n    at /Users/yonasyeneneh/Workspace/un-job-zone-project/unjobzone-etl-cursor/src/routes/status.js:29:19\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)","timestamp":"2025-04-08T20:10:16.449Z"}
 {"error":{"path":"/Users/yonasyeneneh/Workspace/un-job-zone-project/unjobzone-etl-cursor/src/views/error.ejs"},"level":"error","message":"Unhandled error","timestamp":"2025-04-08T20:10:16.451Z"}
+{"error":{},"level":"error","message":"Error in IMF ETL process","stats":{"newJobs":0,"totalProcessed":22,"updatedJobs":0},"timestamp":"2025-04-09T15:35:25.254Z"}
+{"error":{},"level":"error","message":"Error in IMF Jobs","timestamp":"2025-04-09T15:35:25.340Z"}
+{"error":{},"level":"error","message":"Error running initial tasks","timestamp":"2025-04-09T15:35:25.341Z"}

@@ -18,6 +18,7 @@ async function fetchAndProcessImfJobVacancies() {
   let updatedJobs = 0;
   let totalProcessed = 0;
   const client = new Client(credentials);
+  const currentJobIds = new Set();
 
   try {
     await client.connect();
@@ -63,8 +64,7 @@ async function fetchAndProcessImfJobVacancies() {
           console.log(`📑 Total pages to process: ${totalPages}`);
         }
 
-        // Track all jobs in current feed
-        const currentJobIds = new Set();
+        // Track jobs in current page
         for (const job of data.jobPostings) {
           currentJobIds.add(job.id);
         }
