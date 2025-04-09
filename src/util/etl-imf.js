@@ -63,6 +63,12 @@ async function fetchAndProcessImfJobVacancies() {
           console.log(`📑 Total pages to process: ${totalPages}`);
         }
 
+        // Track all jobs in current feed
+        const currentJobIds = new Set();
+        for (const job of data.jobPostings) {
+          currentJobIds.add(job.id);
+        }
+
         for (const job of data.jobPostings) {
           totalProcessed++;
           const jobDetailAPI = `https://imf.wd5.myworkdayjobs.com/wday/cxs/imf/IMF${job.externalPath}`;
@@ -157,7 +163,38 @@ async function fetchAndProcessImfJobVacancies() {
           }
         }
 
-        page++;
+        // Update job statuses based on feed presence and expiration
+        const jobStatusUpdate = await client.query(`
+            UPDATE job_vacancies 
+            SET status = CASE 
+                WHEN job_id = ANY($1) THEN 'active'
+                WHEN end_date < NOW() THEN 'closed'
+                ELSE 'active'
+            END,
+            notes = CASE 
+                WHEN job_id = ANY($1) THEN NULL
+                WHEN end_date < NOW() THEN 'Job has expired'
+                ELSE NULL
+            END,
+            updated_at = NOW()
+            WHERE data_source = 'imf' 
+            AND status != 'closed'
+        `, [Array.from(currentJobIds)]);
+
+        const endTime = new Date();
+        const duration = (endTime - startTime) / 1000;
+
+        console.log("\n" + "=".repeat(80));
+        console.log("📊 IMF Jobs ETL Process Summary");
+        console.log("=".repeat(80));
+        console.log(`✨ New jobs added: ${newJobs}`);
+        console.log(`📝 Jobs updated: ${updatedJobs}`);
+        console.log(`🔒 Jobs closed: ${existingJobMap.size}`);
+        console.log(`📦 Total jobs processed: ${totalProcessed}`);
+        console.log(`⏱️ Duration: ${duration.toFixed(2)} seconds`);
+        console.log(`⏰ End Time: ${endTime.toISOString()}`);
+        console.log("=".repeat(80) + "\n");
+
       } catch (pageError) {
         console.error("❌ Error processing page:", pageError.message);
         logger.error("Error processing page", {
@@ -168,31 +205,6 @@ async function fetchAndProcessImfJobVacancies() {
         page++; // Move to next page despite error
       }
     }
-
-    // Mark jobs as closed if they have expired
-    const closedJobs = await client.query(
-        `UPDATE job_vacancies 
-         SET status = 'closed', 
-             notes = 'Job has expired',
-             updated_at = NOW()
-         WHERE data_source = 'imf' 
-         AND end_date < NOW() 
-         AND status = 'active'`
-    );
-
-    const endTime = new Date();
-    const duration = (endTime - startTime) / 1000;
-
-    console.log("\n" + "=".repeat(80));
-    console.log("📊 IMF Jobs ETL Process Summary");
-    console.log("=".repeat(80));
-    console.log(`✨ New jobs added: ${newJobs}`);
-    console.log(`📝 Jobs updated: ${updatedJobs}`);
-    console.log(`🔒 Jobs closed: ${existingJobMap.size}`);
-    console.log(`📦 Total jobs processed: ${totalProcessed}`);
-    console.log(`⏱️ Duration: ${duration.toFixed(2)} seconds`);
-    console.log(`⏰ End Time: ${endTime.toISOString()}`);
-    console.log("=".repeat(80) + "\n");
 
   } catch (error) {
     console.error("❌ Error in IMF ETL process:", error.message);

@@ -34,16 +34,29 @@ async function fetchAndProcessWfpJobVacancies() {
         await client.query(`DELETE FROM job_vacancies WHERE data_source = 'wfp'`);
         console.log("🗑️  Cleared existing WFP jobs");
 
-        // Mark jobs as closed if they have expired
-        const closedJobs = await client.query(
-            `UPDATE job_vacancies 
-             SET status = 'closed', 
-                 notes = 'Job has expired',
-                 updated_at = NOW()
-             WHERE data_source = 'wfp' 
-             AND end_date < NOW() 
-             AND status = 'active'`
-        );
+        // Track all jobs in current feed
+        const currentJobIds = new Set();
+        for (const job of data.jobPostings) {
+            currentJobIds.add(job.id);
+        }
+
+        // Update job statuses based on feed presence and expiration
+        const jobStatusUpdate = await client.query(`
+            UPDATE job_vacancies 
+            SET status = CASE 
+                WHEN job_id = ANY($1) THEN 'active'
+                WHEN end_date < NOW() THEN 'closed'
+                ELSE 'active'
+            END,
+            notes = CASE 
+                WHEN job_id = ANY($1) THEN NULL
+                WHEN end_date < NOW() THEN 'Job has expired'
+                ELSE NULL
+            END,
+            updated_at = NOW()
+            WHERE data_source = 'wfp' 
+            AND status != 'closed'
+        `, [Array.from(currentJobIds)]);
 
         let page = 0;
         const itemsPerPage = 20;

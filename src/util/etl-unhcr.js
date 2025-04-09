@@ -67,6 +67,12 @@ async function fetchAndProcessUnhcrJobVacancies() {
                     console.log(`📑 Total jobs to process: ${totalJobs}`);
                 }
 
+                // Track all jobs in current feed
+                const currentJobIds = new Set();
+                for (const job of data.jobPostings) {
+                    currentJobIds.add(job.id);
+                }
+
                 for (const job of data.jobPostings) {
                     processedJobs++;
                     const jobDetailAPI = `https://unhcr.wd3.myworkdayjobs.com/wday/cxs/unhcr/External${job.externalPath}`;
@@ -161,34 +167,40 @@ async function fetchAndProcessUnhcrJobVacancies() {
                     }
                 }
 
-                page++;
+                // Update job statuses based on feed presence and expiration
+                const jobStatusUpdate = await client.query(`
+                    UPDATE job_vacancies 
+                    SET status = CASE 
+                        WHEN job_id = ANY($1) THEN 'active'
+                        WHEN end_date < NOW() THEN 'closed'
+                        ELSE 'active'
+                    END,
+                    notes = CASE 
+                        WHEN job_id = ANY($1) THEN NULL
+                        WHEN end_date < NOW() THEN 'Job has expired'
+                        ELSE NULL
+                    END,
+                    updated_at = NOW()
+                    WHERE data_source = 'unhcr' 
+                    AND status != 'closed'
+                `, [Array.from(currentJobIds)]);
+
+                const endTime = new Date();
+                const duration = (endTime - startTime) / 1000;
+
+                console.log("\n" + "=".repeat(80));
+                console.log("📊 UNHCR Jobs ETL Process Summary");
+                console.log("=".repeat(80));
+                console.log(`📦 Total jobs processed: ${processedJobs}`);
+                console.log(`⏱️ Duration: ${duration.toFixed(2)} seconds`);
+                console.log(`⏰ End Time: ${endTime.toISOString()}`);
+                console.log("=".repeat(80) + "\n");
+
             } catch (pageError) {
                 console.error("❌ Error processing page:", pageError.message);
                 page++; // Move to next page despite error
             }
         }
-
-        // Mark jobs as closed if they have expired
-        const closedJobs = await client.query(
-            `UPDATE job_vacancies 
-             SET status = 'closed', 
-                 notes = 'Job has expired',
-                 updated_at = NOW()
-             WHERE data_source = 'unhcr' 
-             AND end_date < NOW() 
-             AND status = 'active'`
-        );
-
-        const endTime = new Date();
-        const duration = (endTime - startTime) / 1000;
-
-        console.log("\n" + "=".repeat(80));
-        console.log("📊 UNHCR Jobs ETL Process Summary");
-        console.log("=".repeat(80));
-        console.log(`📦 Total jobs processed: ${processedJobs}`);
-        console.log(`⏱️ Duration: ${duration.toFixed(2)} seconds`);
-        console.log(`⏰ End Time: ${endTime.toISOString()}`);
-        console.log("=".repeat(80) + "\n");
 
     } catch (error) {
         console.error("\n❌ Error in UNHCR ETL process:", error.message);
