@@ -938,3 +938,9 @@
 {"duration":49,"level":"info","message":"Executed query","rows":1,"text":"UPDATE job_executions SET status = $1, end_time = $2, error_message = $3 WHERE id = $4","timestamp":"2025-04-09T15:36:06.045Z"}
 {"level":"info","message":"Successfully completed IMF Jobs","timestamp":"2025-04-09T15:36:06.046Z"}
 {"duration":45,"level":"info","message":"Executed query","rows":1,"text":"INSERT INTO job_executions (job_name, status, start_time) VALUES ($1, $2, $3) RETURNING id","timestamp":"2025-04-09T15:36:06.091Z"}
+{"level":"info","message":"ETL Server started on PORT: 3001","timestamp":"2025-04-09T16:29:35.017Z"}
+{"level":"info","message":"Running initial tasks...","timestamp":"2025-04-09T16:29:35.018Z"}
+{"duration":415,"level":"info","message":"Executed query","rows":1,"text":"INSERT INTO job_executions (job_name, status, start_time) VALUES ($1, $2, $3) RETURNING id","timestamp":"2025-04-09T16:29:35.433Z"}
+{"level":"info","message":"ETL Server started on PORT: 3001","timestamp":"2025-04-09T16:29:39.725Z"}
+{"level":"info","message":"Running initial tasks...","timestamp":"2025-04-09T16:29:39.727Z"}
+{"duration":379,"level":"info","message":"Executed query","rows":1,"text":"INSERT INTO job_executions (job_name, status, start_time) VALUES ($1, $2, $3) RETURNING id","timestamp":"2025-04-09T16:29:40.106Z"}

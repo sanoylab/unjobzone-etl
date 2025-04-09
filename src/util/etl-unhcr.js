@@ -154,4 +154,73 @@ async function fetchAndProcessUnhcrJobVacancies() {
                         // Show progress every 10 jobs
                         if (processedJobs % 10 === 0) {
                             const progress = ((processedJobs / totalJobs) * 100).toFixed(1);
-                            console.log(`
+                            console.log(`⏳ Progress: ${processedJobs}/${totalJobs} jobs (${progress}%)`);
+                        }
+
+                    } catch (jobError) {
+                        console.error(`❌ Error processing job ${job.title}:`, jobError.message);
+                        logger.error("Error processing individual job", {
+                            error: jobError,
+                            jobTitle: job.title,
+                            jobId: job.id
+                        });
+                    }
+                }
+
+                page++;
+            } catch (pageError) {
+                console.error("❌ Error processing page:", pageError.message);
+                page++; // Move to next page despite error
+            }
+        }
+
+        // Update job statuses based on feed presence and expiration
+        const jobStatusUpdate = await client.query(`
+            UPDATE job_vacancies 
+            SET status = CASE 
+                WHEN job_id = ANY($1) THEN 'active'
+                WHEN end_date < NOW() THEN 'closed'
+                ELSE 'active'
+            END,
+            notes = CASE 
+                WHEN job_id = ANY($1) THEN NULL
+                WHEN end_date < NOW() THEN 'Job has expired'
+                ELSE NULL
+            END,
+            updated_at = NOW()
+            WHERE data_source = 'unhcr' 
+            AND status != 'closed'
+        `, [Array.from(currentJobIds)]);
+
+        const endTime = new Date();
+        const duration = (endTime - startTime) / 1000;
+
+        console.log("\n" + "=".repeat(80));
+        console.log("📊 UNHCR Jobs ETL Process Summary");
+        console.log("=".repeat(80));
+        console.log(`📦 Total jobs processed: ${processedJobs}`);
+        console.log(`⏱️ Duration: ${duration.toFixed(2)} seconds`);
+        console.log(`⏰ End Time: ${endTime.toISOString()}`);
+        console.log("=".repeat(80) + "\n");
+
+    } catch (error) {
+        console.error("\n❌ Error in UNHCR ETL process:", error.message);
+        logger.error("Error in UNHCR ETL process", {
+            error: {
+                message: error.message,
+                stack: error.stack,
+                code: error.code
+            },
+            stats: {
+                processedJobs,
+                totalJobs
+            }
+        });
+        throw error;
+    } finally {
+        await client.end();
+        console.log("✅ Database connection closed");
+    }
+}
+
+module.exports = { fetchAndProcessUnhcrJobVacancies };
