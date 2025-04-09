@@ -34,33 +34,10 @@ async function fetchAndProcessWfpJobVacancies() {
         await client.query(`DELETE FROM job_vacancies WHERE data_source = 'wfp'`);
         console.log("🗑️  Cleared existing WFP jobs");
 
-        // Track all jobs in current feed
-        const currentJobIds = new Set();
-        for (const job of data.jobPostings) {
-            currentJobIds.add(job.id);
-        }
-
-        // Update job statuses based on feed presence and expiration
-        const jobStatusUpdate = await client.query(`
-            UPDATE job_vacancies 
-            SET status = CASE 
-                WHEN job_id = ANY($1) THEN 'active'
-                WHEN end_date < NOW() THEN 'closed'
-                ELSE 'active'
-            END,
-            notes = CASE 
-                WHEN job_id = ANY($1) THEN NULL
-                WHEN end_date < NOW() THEN 'Job has expired'
-                ELSE NULL
-            END,
-            updated_at = NOW()
-            WHERE data_source = 'wfp' 
-            AND status != 'closed'
-        `, [Array.from(currentJobIds)]);
-
         let page = 0;
         const itemsPerPage = 20;
         let totalPages = 1;
+        const currentJobIds = new Set(); // Track all jobs across pages
 
         while (page < totalPages) {
             const payload = {
@@ -87,8 +64,12 @@ async function fetchAndProcessWfpJobVacancies() {
 
                 if (totalPages === 1) {
                     totalPages = Math.ceil(data.total / itemsPerPage);
-                    totalJobs = data.total;
-                    console.log(`📑 Total jobs to process: ${totalJobs}`);
+                    console.log(`📑 Total pages to process: ${totalPages}`);
+                }
+
+                // Track jobs in current page
+                for (const job of data.jobPostings) {
+                    currentJobIds.add(job.id);
                 }
 
                 for (const job of data.jobPostings) {
@@ -108,80 +89,78 @@ async function fetchAndProcessWfpJobVacancies() {
 
                         const orgId = await getOrganizationId("WFP");
                         const jobId = jobDetail.jobPostingInfo.id;
-                        
-                        // Check if this job existed before and had notes
                         const existingJob = existingJobsMap.get(jobId);
-                        const existingNotes = existingJob?.notes || null;
 
-                        // Prepare notes for the job
-                        let notes = existingNotes;
-                        if (existingJob) {
-                            if (existingJob.end_date?.toISOString() !== endDate?.toISOString()) {
-                                const noteAddition = `End date changed from ${existingJob.end_date?.toISOString() || 'none'} to ${endDate?.toISOString() || 'none'} on ${new Date().toISOString()}`;
-                                notes = notes ? `${notes}; ${noteAddition}` : noteAddition;
-                            }
-                            if (existingJob.job_title !== job.title) {
-                                const noteAddition = `Title changed from "${existingJob.job_title}" to "${job.title}" on ${new Date().toISOString()}`;
-                                notes = notes ? `${notes}; ${noteAddition}` : noteAddition;
-                            }
+                        if (!existingJob) {
+                            // Insert new job
+                            await client.query(`
+                                INSERT INTO job_vacancies (
+                                    job_id, language, category_code, job_title, job_code_title, job_description,
+                                    job_family_code, job_level, duty_station, recruitment_type, start_date, end_date, dept,
+                                    total_count, jn, jf, jc, jl, created, data_source, organization_id, apply_link, status
+                                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+                            `, [
+                                jobId,
+                                "EN",
+                                job.bulletFields[0],
+                                job.title,
+                                jobDetail.jobPostingInfo.jobPostingId,
+                                jobDetail.jobPostingInfo.jobDescription,
+                                "", // jobFamilyCode
+                                "", // jobLevel
+                                jobDetail.jobPostingInfo.location,
+                                jobDetail.jobPostingInfo.timeType,
+                                startDate,
+                                endDate,
+                                jobDetail.hiringOrganization.name || "",
+                                job.total,
+                                "", // jn
+                                "", // jf
+                                "", // jc
+                                "", // jl
+                                new Date(),
+                                "wfp",
+                                orgId,
+                                "https://wd3.myworkdaysite.com/en-US/recruiting/wfp/job_openings/details/" + jobDetail.jobPostingInfo.jobPostingId,
+                                "active"
+                            ]);
+                            console.log(`✨ New job added: ${job.title}`);
+                        } else if (
+                            existingJob.job_title !== job.title ||
+                            existingJob.end_date?.toISOString() !== endDate?.toISOString()
+                        ) {
+                            // Update existing job
+                            await client.query(`
+                                UPDATE job_vacancies 
+                                SET job_title = $1, job_description = $2, end_date = $3, 
+                                    duty_station = $4, updated_at = NOW()
+                                WHERE job_id = $5 AND data_source = $6
+                            `, [
+                                job.title,
+                                jobDetail.jobPostingInfo.jobDescription,
+                                endDate,
+                                jobDetail.jobPostingInfo.location,
+                                jobId,
+                                'wfp'
+                            ]);
+                            console.log(`📝 Updated job: ${job.title}`);
                         }
 
-                        // Insert job with notes
-                        const query = `
-                            INSERT INTO job_vacancies (
-                                job_id, language, category_code, job_title, job_code_title, job_description,
-                                job_family_code, job_level, duty_station, recruitment_type, start_date, end_date, dept,
-                                total_count, jn, jf, jc, jl, created, data_source, organization_id, apply_link, status, notes
-                            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
-                            RETURNING id;
-                        `;
-
-                        await client.query(query, [
-                            jobId,
-                            "EN",
-                            job.bulletFields[0],
-                            job.title,
-                            jobDetail.jobPostingInfo.jobPostingId,
-                            jobDetail.jobPostingInfo.jobDescription,
-                            "", // jobFamilyCode
-                            "", // jobLevel
-                            jobDetail.jobPostingInfo.location,
-                            jobDetail.jobPostingInfo.timeType,
-                            startDate,
-                            endDate,
-                            jobDetail.hiringOrganization.name || "",
-                            job.total,
-                            "", // jn
-                            "", // jf
-                            "", // jc
-                            "", // jl
-                            new Date(),
-                            "wfp",
-                            orgId,
-                            "https://wd3.myworkdaysite.com/en-US/recruiting/wfp/job_openings/details/" + jobDetail.jobPostingInfo.jobPostingId,
-                            'active',
-                            notes
-                        ]);
-
-                        if (existingJob) {
-                            console.log(`🔄 Updated: ${job.title}`);
-                        } else {
-                            console.log(`✨ New job: ${job.title}`);
-                        }
-
-                        // Show progress every 10 jobs
-                        if (processedJobs % 10 === 0) {
-                            const progress = ((processedJobs / totalJobs) * 100).toFixed(1);
-                            console.log(`⏳ Progress: ${processedJobs}/${totalJobs} jobs (${progress}%)`);
-                        }
+                        // Remove from map to track which jobs are still active
+                        existingJobsMap.delete(jobId);
 
                     } catch (jobError) {
                         console.error(`❌ Error processing job ${job.title}:`, jobError.message);
                         logger.error("Error processing individual job", {
                             error: jobError,
                             jobTitle: job.title,
-                            jobId: job.id
+                            jobId: jobDetail?.jobPostingInfo?.id
                         });
+                    }
+
+                    // Show progress
+                    if (processedJobs % 10 === 0) {
+                        console.log(`⏳ Processed ${processedJobs} jobs...`);
                     }
                 }
 
@@ -196,6 +175,24 @@ async function fetchAndProcessWfpJobVacancies() {
                 page++; // Move to next page despite error
             }
         }
+
+        // Update job statuses based on feed presence and expiration
+        const jobStatusUpdate = await client.query(`
+            UPDATE job_vacancies 
+            SET status = CASE 
+                WHEN job_id = ANY($1) THEN 'active'
+                WHEN end_date < NOW() THEN 'closed'
+                ELSE 'active'
+            END,
+            notes = CASE 
+                WHEN job_id = ANY($1) THEN NULL
+                WHEN end_date < NOW() THEN 'Job has expired'
+                ELSE NULL
+            END,
+            updated_at = NOW()
+            WHERE data_source = 'wfp' 
+            AND status != 'closed'
+        `, [Array.from(currentJobIds)]);
 
         const endTime = new Date();
         const duration = (endTime - startTime) / 1000;
