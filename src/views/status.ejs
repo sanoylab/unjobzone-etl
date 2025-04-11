@@ -333,11 +333,6 @@
                 const active = parseInt(stat.active_jobs) || 0;
                 return sum + active;
             }, 0);
-            
-            const closedJobs = orgStats.reduce((sum, stat) => {
-                const closed = parseInt(stat.closed_jobs) || 0;
-                return sum + closed;
-            }, 0);
             %>
             
             <div class="stats-card total">
@@ -349,11 +344,6 @@
                 <div class="stat-label">Active Jobs</div>
                 <div class="stat-value"><%= activeJobs.toLocaleString() %></div>
                 <div class="stat-description">Currently open positions</div>
-            </div>
-            <div class="stats-card closed">
-                <div class="stat-label">Closed Jobs</div>
-                <div class="stat-value"><%= closedJobs.toLocaleString() %></div>
-                <div class="stat-description">No longer accepting applications</div>
             </div>
         </div>
 
@@ -369,20 +359,6 @@
                         <canvas id="orgChart" 
                                 data-labels='<%- JSON.stringify(orgStats.map(stat => stat.data_source)) %>'
                                 data-values='<%- JSON.stringify(orgStats.map(stat => stat.total_jobs)) %>'></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Jobs by Status Chart -->
-            <div class="card">
-                <div class="card-header">
-                    <i class='bx bxs-bar-chart-alt-2'></i> Jobs by Status
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="statusChart"
-                                data-active="<%= activeJobs %>"
-                                data-closed="<%= closedJobs %>"></canvas>
                     </div>
                 </div>
             </div>
@@ -465,40 +441,10 @@
                 }]
             };
 
-            // Status Chart
-            const statusCanvas = document.getElementById('statusChart');
-            const statusCtx = statusCanvas.getContext('2d');
-            const statusData = {
-                labels: ['Active', 'Closed'],
-                datasets: [{
-                    data: [
-                        parseInt(statusCanvas.dataset.active),
-                        parseInt(statusCanvas.dataset.closed)
-                    ],
-                    backgroundColor: [
-                        '#1cc88a',
-                        '#e74a3b'
-                    ]
-                }]
-            };
-
-            // Initialize charts
+            // Initialize chart
             new Chart(orgCtx, {
                 type: 'pie',
                 data: orgData,
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-
-            new Chart(statusCtx, {
-                type: 'doughnut',
-                data: statusData,
                 options: {
                     responsive: true,
                     plugins: {

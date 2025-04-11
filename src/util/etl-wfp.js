@@ -183,24 +183,10 @@ async function fetchAndProcessWfpJobVacancies() {
                 WHERE data_source = 'wfp' 
                 AND end_date < NOW()
                 RETURNING job_id
-            ),
-            status_updates AS (
-                UPDATE job_vacancies 
-                SET status = CASE 
-                    WHEN end_date < NOW() THEN 'closed'
-                    ELSE 'active'
-                END,
-                notes = CASE 
-                    WHEN end_date < NOW() THEN COALESCE(notes, '') || '; Job has expired on ' || NOW()::text
-                    ELSE notes
-                END,
-                updated_at = NOW()
-                WHERE data_source = 'wfp'
-                RETURNING job_id, status
             )
             SELECT 
                 (SELECT COUNT(*) FROM expired_jobs) as expired_count,
-                (SELECT COUNT(*) FROM status_updates WHERE status = 'active') as active_count
+                (SELECT COUNT(*) FROM job_vacancies WHERE data_source = 'wfp') as active_count
         `);
 
         const expiredCount = jobStatusUpdate.rows[0].expired_count;

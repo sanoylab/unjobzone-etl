@@ -66,8 +66,7 @@ router.get('/', async (req, res) => {
             SELECT 
                 data_source,
                 COUNT(*) as total_jobs,
-                SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_jobs,
-                SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) as closed_jobs,
+                COUNT(*) as active_jobs,
                 MIN(created) as first_job_date,
                 MAX(updated_at) as last_update
             FROM job_vacancies
@@ -80,8 +79,7 @@ router.get('/', async (req, res) => {
             SELECT 
                 job_title,
                 data_source,
-                created,
-                status
+                created
             FROM job_vacancies
             ORDER BY created DESC
             LIMIT 5
