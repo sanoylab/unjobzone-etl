@@ -467,7 +467,7 @@
                                 </div>
                                 <div>
                                     <span class="time-ago">
-                                        <% if (run.nextRun) { %>
+                                        <% if (run.nextRun && !isNaN(new Date(run.nextRun).getTime())) { %>
                                             <%= new Date(run.nextRun).toLocaleString('en-US', { 
                                                 timeZone: 'UTC',
                                                 year: 'numeric',
@@ -475,7 +475,7 @@
                                                 day: 'numeric',
                                                 hour: '2-digit',
                                                 minute: '2-digit'
-                                            }) %>
+                                            }) %> UTC
                                         <% } else { %>
                                             No scheduled run
                                         <% } %>
