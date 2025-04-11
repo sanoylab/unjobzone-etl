@@ -309,6 +309,88 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .stats-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-icon {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 2.5rem;
+            opacity: 0.1;
+            color: inherit;
+        }
+
+        .stats-card.organizations {
+            border-left-color: #36b9cc;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
+        }
+
+        .etl-history-item {
+            padding: 1rem;
+            border-left: 3px solid #e3e6f0;
+            margin-bottom: 1rem;
+            background: white;
+            border-radius: 0.5rem;
+            transition: transform 0.2s;
+        }
+
+        .etl-history-item:hover {
+            transform: translateX(5px);
+        }
+
+        .time-info {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            color: var(--secondary-color);
+        }
+
+        .error-message {
+            margin-top: 0.5rem;
+            color: var(--danger-color);
+            font-size: 0.9rem;
+        }
+
+        .job-name {
+            font-weight: 600;
+            color: #2e384d;
+        }
+
+        .status-badge {
+            padding: 0.3rem 0.6rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+        }
+
+        .bg-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .bg-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .timeline-item {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .timeline-item::before {
+            display: none;
+        }
+
+        .timeline-item::after {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -323,7 +405,6 @@
         <!-- Stats Overview -->
         <div class="stats-grid">
             <% 
-            // Ensure we're working with numbers and handle potential null/undefined values
             const totalJobs = orgStats.reduce((sum, stat) => {
                 const total = parseInt(stat.total_jobs) || 0;
                 return sum + total;
@@ -339,11 +420,19 @@
                 <div class="stat-label">Total Jobs</div>
                 <div class="stat-value"><%= totalJobs.toLocaleString() %></div>
                 <div class="stat-description">Across all organizations</div>
+                <div class="stat-icon"><i class='bx bxs-briefcase'></i></div>
             </div>
             <div class="stats-card active">
                 <div class="stat-label">Active Jobs</div>
                 <div class="stat-value"><%= activeJobs.toLocaleString() %></div>
                 <div class="stat-description">Currently open positions</div>
+                <div class="stat-icon"><i class='bx bxs-badge-check'></i></div>
+            </div>
+            <div class="stats-card organizations">
+                <div class="stat-label">Organizations</div>
+                <div class="stat-value"><%= orgStats.length %></div>
+                <div class="stat-description">Participating UN agencies</div>
+                <div class="stat-icon"><i class='bx bxs-building'></i></div>
             </div>
         </div>
 
@@ -363,27 +452,6 @@
                 </div>
             </div>
 
-            <!-- Recent Updates -->
-            <div class="card">
-                <div class="card-header">
-                    <i class='bx bxs-time'></i> Recent Updates
-                </div>
-                <div class="card-body">
-                    <% recentUpdates.forEach(update => { %>
-                        <div class="update-item">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="org-badge bg-primary"><%= update.data_source %></span>
-                                <span class="time-ago"><%= new Date(update.updated_at).toLocaleString() %></span>
-                            </div>
-                            <div class="mt-2"><%= update.job_title %></div>
-                            <% if (update.notes) { %>
-                                <div class="update-note"><%= update.notes %></div>
-                            <% } %>
-                        </div>
-                    <% }); %>
-                </div>
-            </div>
-
             <!-- ETL Schedule -->
             <div class="card">
                 <div class="card-header">
@@ -393,11 +461,14 @@
                     <div class="etl-schedule">
                         <% Object.entries(nextRuns).forEach(([org, run]) => { %>
                             <div class="etl-schedule-item">
-                                <div><%= org %></div>
+                                <div class="d-flex align-items-center">
+                                    <i class='bx bxs-time me-2'></i>
+                                    <span><%= org %></span>
+                                </div>
                                 <div>
                                     <span class="time-ago">
                                         <% if (run.nextRun) { %>
-                                            Next run: <%= new Date(run.nextRun).toLocaleString('en-US', { 
+                                            <%= new Date(run.nextRun).toLocaleString('en-US', { 
                                                 timeZone: 'UTC',
                                                 year: 'numeric',
                                                 month: 'short',
@@ -410,6 +481,61 @@
                                         <% } %>
                                     </span>
                                 </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Updates -->
+            <div class="card">
+                <div class="card-header">
+                    <i class='bx bxs-time'></i> Recent Updates
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <% recentUpdates.forEach(update => { %>
+                            <div class="timeline-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="org-badge bg-primary"><%= update.data_source %></span>
+                                    <span class="time-ago"><%= new Date(update.updated_at).toLocaleString() %></span>
+                                </div>
+                                <div class="mt-2"><%= update.job_title %></div>
+                                <% if (update.notes) { %>
+                                    <div class="update-note"><%= update.notes %></div>
+                                <% } %>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ETL History -->
+            <div class="card">
+                <div class="card-header">
+                    <i class='bx bxs-history'></i> ETL History
+                </div>
+                <div class="card-body">
+                    <div class="etl-history">
+                        <% etlHistory.forEach(execution => { %>
+                            <div class="etl-history-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="job-name"><%= execution.job_name %></span>
+                                    <span class="status-badge <%= execution.status === 'completed' ? 'bg-success' : 'bg-danger' %>">
+                                        <%= execution.status %>
+                                    </span>
+                                </div>
+                                <div class="time-info">
+                                    <small>Started: <%= new Date(execution.start_time).toLocaleString() %></small>
+                                    <% if (execution.end_time) { %>
+                                        <small>Ended: <%= new Date(execution.end_time).toLocaleString() %></small>
+                                    <% } %>
+                                </div>
+                                <% if (execution.error_message) { %>
+                                    <div class="error-message">
+                                        <small><%= execution.error_message %></small>
+                                    </div>
+                                <% } %>
                             </div>
                         <% }); %>
                     </div>
@@ -436,22 +562,31 @@
                         '#1cc88a',
                         '#36b9cc',
                         '#f6c23e',
-                        '#e74a3b'
+                        '#e74a3b',
+                        '#5a5c69',
+                        '#858796'
                     ]
                 }]
             };
 
             // Initialize chart
             new Chart(orgCtx, {
-                type: 'pie',
+                type: 'doughnut',
                 data: orgData,
                 options: {
                     responsive: true,
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 12
+                                }
+                            }
                         }
-                    }
+                    },
+                    cutout: '70%'
                 }
             });
         });
