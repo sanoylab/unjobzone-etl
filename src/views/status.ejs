@@ -323,24 +323,36 @@
         <!-- Stats Overview -->
         <div class="stats-grid">
             <% 
-            const totalJobs = orgStats.reduce((sum, stat) => sum + (stat.total_jobs || 0), 0);
-            const activeJobs = orgStats.reduce((sum, stat) => sum + (stat.active_jobs || 0), 0);
-            const closedJobs = orgStats.reduce((sum, stat) => sum + (stat.closed_jobs || 0), 0);
+            // Ensure we're working with numbers and handle potential null/undefined values
+            const totalJobs = orgStats.reduce((sum, stat) => {
+                const total = parseInt(stat.total_jobs) || 0;
+                return sum + total;
+            }, 0);
+            
+            const activeJobs = orgStats.reduce((sum, stat) => {
+                const active = parseInt(stat.active_jobs) || 0;
+                return sum + active;
+            }, 0);
+            
+            const closedJobs = orgStats.reduce((sum, stat) => {
+                const closed = parseInt(stat.closed_jobs) || 0;
+                return sum + closed;
+            }, 0);
             %>
             
             <div class="stats-card total">
                 <div class="stat-label">Total Jobs</div>
-                <div class="stat-value"><%= totalJobs %></div>
+                <div class="stat-value"><%= totalJobs.toLocaleString() %></div>
                 <div class="stat-description">Across all organizations</div>
             </div>
             <div class="stats-card active">
                 <div class="stat-label">Active Jobs</div>
-                <div class="stat-value"><%= activeJobs %></div>
+                <div class="stat-value"><%= activeJobs.toLocaleString() %></div>
                 <div class="stat-description">Currently open positions</div>
             </div>
             <div class="stats-card closed">
                 <div class="stat-label">Closed Jobs</div>
-                <div class="stat-value"><%= closedJobs %></div>
+                <div class="stat-value"><%= closedJobs.toLocaleString() %></div>
                 <div class="stat-description">No longer accepting applications</div>
             </div>
         </div>
