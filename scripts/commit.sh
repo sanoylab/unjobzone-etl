@@ -18,7 +18,7 @@ fi
 changed_files=$(git status --porcelain | awk '{print $2}')
 
 # Initialize commit message
-commit_message="Update: "
+commit_message=""
 
 # Process each changed file
 for file in $changed_files; do
@@ -31,56 +31,53 @@ for file in $changed_files; do
         src/util/etl-*.js)
             org=$(echo $file | sed 's/src\/util\/etl-\(.*\)\.js/\1/' | tr '[:lower:]' '[:upper:]')
             if echo "$changes" | grep -q "async function"; then
-                commit_message+="$org ETL function updates, "
+                commit_message+="$org ETL: Updated functions, "
             elif echo "$changes" | grep -q "console.log"; then
-                commit_message+="$org ETL logging updates, "
+                commit_message+="$org ETL: Enhanced logging, "
             elif echo "$changes" | grep -q "try.*catch"; then
-                commit_message+="$org ETL error handling, "
+                commit_message+="$org ETL: Improved error handling, "
             else
-                commit_message+="$org ETL updates, "
+                commit_message+="$org ETL: General updates, "
             fi
             ;;
         src/routes/*.js)
             route=$(echo $file | sed 's/src\/routes\/\(.*\)\.js/\1/')
             if echo "$changes" | grep -q "router.get\|router.post"; then
-                commit_message+="$route API endpoint updates, "
+                commit_message+="$route: Modified endpoints, "
             else
-                commit_message+="$route route updates, "
+                commit_message+="$route: Route updates, "
             fi
             ;;
         src/views/*.ejs)
             view=$(echo $file | sed 's/src\/views\/\(.*\)\.ejs/\1/')
             if echo "$changes" | grep -q "style"; then
-                commit_message+="$view template styling updates, "
+                commit_message+="$view: UI/UX improvements, "
             elif echo "$changes" | grep -q "script"; then
-                commit_message+="$view template script updates, "
+                commit_message+="$view: Enhanced functionality, "
             else
-                commit_message+="$view template updates, "
+                commit_message+="$view: Template updates, "
             fi
             ;;
         migrations/*.sql)
             if echo "$changes" | grep -q "CREATE TABLE"; then
-                commit_message+="New table creation, "
+                commit_message+="DB: Added new table, "
             elif echo "$changes" | grep -q "ALTER TABLE"; then
-                commit_message+="Table schema updates, "
+                commit_message+="DB: Modified schema, "
             else
-                commit_message+="Database schema updates, "
+                commit_message+="DB: Schema updates, "
             fi
             ;;
         scripts/*.sh)
-            commit_message+="Script updates, "
+            commit_message+="Scripts: Automation updates, "
             ;;
         *)
-            commit_message+="Other updates, "
+            commit_message+="Misc: General updates, "
             ;;
     esac
 done
 
 # Remove trailing comma and space
 commit_message=${commit_message%, }
-
-# Add timestamp
-commit_message+=" - $(date '+%Y-%m-%d %H:%M:%S')"
 
 # Add all changes
 echo -e "${YELLOW}Adding all changes...${NC}"
