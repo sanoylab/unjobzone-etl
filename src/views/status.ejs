@@ -192,11 +192,17 @@
         .grid {
             display: grid;
             grid-gap: 1.5rem;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
         }
 
         .grid-item {
             margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .chart-card {
@@ -226,9 +232,11 @@
     <div class="container">
         <!-- Stats Overview -->
         <div class="stats-grid">
-            <% const totalJobs = jobStats.reduce((sum, stat) => sum + stat.count, 0); %>
-            <% const activeJobs = jobStats.filter(stat => stat.status === 'active').reduce((sum, stat) => sum + stat.count, 0); %>
-            <% const closedJobs = jobStats.filter(stat => stat.status === 'closed').reduce((sum, stat) => sum + stat.count, 0); %>
+            <% 
+            const totalJobs = orgStats.reduce((sum, stat) => sum + stat.total_jobs, 0);
+            const activeJobs = orgStats.reduce((sum, stat) => sum + stat.active_jobs, 0);
+            const closedJobs = orgStats.reduce((sum, stat) => sum + stat.closed_jobs, 0);
+            %>
             
             <div class="card stats-card total">
                 <div class="card-body">

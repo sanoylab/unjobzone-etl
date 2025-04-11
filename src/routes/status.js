@@ -61,13 +61,16 @@ router.get('/', async (req, res) => {
             'UNDP Jobs': getNextRunTime('0 1,13 * * *')
         };
 
-        // Get organization statistics
+        // Get job statistics by organization
         const orgStats = await pool.query(`
             SELECT 
                 data_source,
-                COUNT(*) as total_jobs
+                COUNT(*) as total_jobs,
+                SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_jobs,
+                SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) as closed_jobs,
+                MIN(created) as first_job_date,
+                MAX(updated_at) as last_update
             FROM job_vacancies
-            WHERE status = 'active'
             GROUP BY data_source
             ORDER BY total_jobs DESC
         `);
