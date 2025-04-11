@@ -14,7 +14,6 @@ async function fetchAndProcessWorldBankJobVacancies() {
   const client = await pool.connect();
   let newJobs = 0;
   let updatedJobs = 0;
-  let closedJobs = 0;
   let totalProcessed = 0;
 
   try {
@@ -103,24 +102,41 @@ async function fetchAndProcessWorldBankJobVacancies() {
       }
     }
 
-    // Mark jobs as closed if they have expired
-    const result = await client.query(
-      `UPDATE job_vacancies 
-       SET status = 'closed',
-           notes = 'Job has expired',
-           updated_at = NOW()
-       WHERE organization_id = 7 
-       AND end_date < NOW()
-       AND status = 'active'
-       RETURNING job_id`
-    );
-    closedJobs = result.rowCount;
+    // Update job statuses and delete expired jobs
+    const jobStatusUpdate = await client.query(`
+        WITH expired_jobs AS (
+            DELETE FROM job_vacancies 
+            WHERE organization_id = 7 
+            AND closing_date < NOW()
+            RETURNING job_id
+        ),
+        status_updates AS (
+            UPDATE job_vacancies 
+            SET status = CASE 
+                WHEN closing_date < NOW() THEN 'closed'
+                ELSE 'active'
+            END,
+            notes = CASE 
+                WHEN closing_date < NOW() THEN COALESCE(notes, '') || '; Job has expired on ' || NOW()::text
+                ELSE notes
+            END,
+            updated_at = NOW()
+            WHERE organization_id = 7
+            RETURNING job_id, status
+        )
+        SELECT 
+            (SELECT COUNT(*) FROM expired_jobs) as expired_count,
+            (SELECT COUNT(*) FROM status_updates WHERE status = 'active') as active_count
+    `);
+
+    const expiredCount = jobStatusUpdate.rows[0].expired_count;
+    const activeCount = jobStatusUpdate.rows[0].active_count;
 
     await jobTracker.completeRun("World Bank", {
-      total_processed: totalProcessed,
-      new_jobs: newJobs,
-      updated_jobs: updatedJobs,
-      closed_jobs: closedJobs
+        total_processed: totalProcessed,
+        new_jobs: newJobs,
+        updated_jobs: updatedJobs,
+        closed_jobs: expiredCount
     });
 
     const endTime = new Date();
@@ -130,9 +146,9 @@ async function fetchAndProcessWorldBankJobVacancies() {
     console.log("📊 World Bank Jobs ETL Process Summary");
     console.log("=".repeat(80));
     console.log(`✨ New jobs added: ${newJobs}`);
-    console.log(`📝 Jobs updated: ${updatedJobs}`);
-    console.log(`🔒 Jobs closed: ${closedJobs}`);
-    console.log(`📦 Total jobs processed: ${totalProcessed}`);
+    console.log(`📝 Updated jobs: ${updatedJobs}`);
+    console.log(`🗑️  Expired jobs removed: ${expiredCount}`);
+    console.log(`✅ Active jobs: ${activeCount}`);
     console.log(`⏱️ Duration: ${duration.toFixed(2)} seconds`);
     console.log(`⏰ End Time: ${endTime.toISOString()}`);
     console.log("=".repeat(80) + "\n");

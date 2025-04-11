@@ -186,22 +186,24 @@ async function fetchAndProcessImfJobVacancies() {
         status_updates AS (
             UPDATE job_vacancies 
             SET status = CASE 
-                WHEN job_id = ANY($1) THEN 'active'
+                WHEN end_date < NOW() THEN 'closed'
                 ELSE 'active'
             END,
             notes = CASE 
-                WHEN job_id = ANY($1) THEN NULL
-                ELSE NULL
+                WHEN end_date < NOW() THEN COALESCE(notes, '') || '; Job has expired on ' || NOW()::text
+                ELSE notes
             END,
             updated_at = NOW()
-            WHERE data_source = 'imf' 
-            AND status != 'closed'
+            WHERE data_source = 'imf'
             RETURNING job_id, status
         )
         SELECT 
             (SELECT COUNT(*) FROM expired_jobs) as expired_count,
             (SELECT COUNT(*) FROM status_updates WHERE status = 'active') as active_count
-    `, [Array.from(currentJobIds)]);
+    `);
+
+    const expiredCount = jobStatusUpdate.rows[0].expired_count;
+    const activeCount = jobStatusUpdate.rows[0].active_count;
 
     const endTime = new Date();
     const duration = (endTime - startTime) / 1000;
@@ -210,11 +212,9 @@ async function fetchAndProcessImfJobVacancies() {
     console.log("📊 IMF Jobs ETL Process Summary");
     console.log("=".repeat(80));
     console.log(`✨ New jobs added: ${newJobs}`);
-    console.log(`📝 Jobs updated: ${updatedJobs}`);
-    console.log(`🔒 Jobs closed: ${existingJobMap.size}`);
-    console.log(`📦 Total jobs processed: ${totalProcessed}`);
-    console.log(`🗑️  Expired jobs deleted: ${jobStatusUpdate.rows[0].expired_count}`);
-    console.log(`✅ Active jobs: ${jobStatusUpdate.rows[0].active_count}`);
+    console.log(`📝 Updated jobs: ${updatedJobs}`);
+    console.log(`🗑️  Expired jobs removed: ${expiredCount}`);
+    console.log(`✅ Active jobs: ${activeCount}`);
     console.log(`⏱️ Duration: ${duration.toFixed(2)} seconds`);
     console.log(`⏰ End Time: ${endTime.toISOString()}`);
     console.log("=".repeat(80) + "\n");
