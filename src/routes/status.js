@@ -1,15 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { Client } = require('pg');
-const { credentials } = require('../util/db');
+const { pool } = require('../util/db');
+const logger = require('../util/logger');
 
 router.get('/', async (req, res) => {
-    const client = new Client(credentials);
     try {
-        await client.connect();
-        
         // Get total jobs by organization and status
-        const jobStats = await client.query(`
+        const jobStats = await pool.query(`
             SELECT 
                 organization_id,
                 data_source,
@@ -21,9 +18,10 @@ router.get('/', async (req, res) => {
             GROUP BY organization_id, data_source, status
             ORDER BY organization_id, data_source, status
         `);
+        logger.info(`Retrieved ${jobStats.rows.length} job statistics`);
 
         // Get recent job updates
-        const recentUpdates = await client.query(`
+        const recentUpdates = await pool.query(`
             SELECT 
                 job_title,
                 data_source,
@@ -35,6 +33,7 @@ router.get('/', async (req, res) => {
             ORDER BY updated_at DESC
             LIMIT 10
         `);
+        logger.info(`Retrieved ${recentUpdates.rows.length} recent updates`);
 
         // Render the status page with the data
         res.render('status', {
@@ -43,15 +42,20 @@ router.get('/', async (req, res) => {
             recentUpdates: recentUpdates.rows,
             currentTime: new Date().toISOString()
         });
+        logger.info('Status page rendered successfully');
 
     } catch (error) {
-        console.error('Error fetching ETL status:', error);
+        logger.error('Error fetching ETL status:', {
+            error: {
+                message: error.message,
+                stack: error.stack,
+                code: error.code
+            }
+        });
         res.status(500).render('error', {
             message: 'Error fetching ETL status',
             error: error
         });
-    } finally {
-        await client.end();
     }
 });
 
