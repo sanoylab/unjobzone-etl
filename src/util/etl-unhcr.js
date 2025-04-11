@@ -174,17 +174,21 @@ async function fetchAndProcessUnhcrJobVacancies() {
             }
         }
 
-        // Update job statuses based on feed presence and expiration
+        // Update job statuses and delete expired jobs
         const jobStatusUpdate = await client.query(`
+            WITH expired_jobs AS (
+                DELETE FROM job_vacancies 
+                WHERE data_source = 'unhcr' 
+                AND end_date < NOW()
+                RETURNING job_id
+            )
             UPDATE job_vacancies 
             SET status = CASE 
                 WHEN job_id = ANY($1) THEN 'active'
-                WHEN end_date < NOW() THEN 'closed'
                 ELSE 'active'
             END,
             notes = CASE 
                 WHEN job_id = ANY($1) THEN NULL
-                WHEN end_date < NOW() THEN 'Job has expired'
                 ELSE NULL
             END,
             updated_at = NOW()
