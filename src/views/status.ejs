@@ -33,6 +33,11 @@
             border-radius: 0.75rem;
             box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
             margin-bottom: 1.5rem;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
         }
 
         .card-header {
@@ -45,11 +50,6 @@
 
         .stats-card {
             border-left: 0.25rem solid;
-            transition: transform 0.2s;
-        }
-
-        .stats-card:hover {
-            transform: translateY(-3px);
         }
 
         .stats-card.total { border-left-color: var(--primary-color); }
@@ -127,6 +127,66 @@
             color: var(--secondary-color);
             margin-top: 0.5rem;
         }
+
+        .etl-schedule {
+            background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .etl-schedule-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e3e6f0;
+        }
+
+        .etl-schedule-item:last-child {
+            border-bottom: none;
+        }
+
+        .progress {
+            height: 0.5rem;
+            border-radius: 1rem;
+        }
+
+        .timeline {
+            position: relative;
+            padding: 1rem 0;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1rem;
+            height: 1rem;
+            border-radius: 50%;
+            background: var(--primary-color);
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: 0.5rem;
+            top: 1rem;
+            width: 2px;
+            height: calc(100% + 1rem);
+            background: var(--primary-color);
+        }
+
+        .timeline-item:last-child::after {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -178,72 +238,149 @@
         </div>
 
         <div class="row">
-            <!-- Jobs by Organization Chart -->
+            <!-- ETL Schedule -->
             <div class="col-xl-6">
                 <div class="card">
                     <div class="card-header">
-                        <i class='bx bx-bar-chart'></i> Jobs by Organization
+                        <i class='bx bx-time'></i> Next ETL Runs
                     </div>
                     <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="orgChart"></canvas>
+                        <div class="etl-schedule">
+                            <% Object.entries(nextRuns).forEach(([job, info]) => { %>
+                            <div class="etl-schedule-item">
+                                <div>
+                                    <strong><%= job %></strong>
+                                    <div class="text-muted small">
+                                        Next run: <%= new Date(info.nextRun).toLocaleString() %>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="mb-1">
+                                        <span class="badge bg-<%= info.timeUntilNextRun < 60 ? 'danger' : 'success' %>">
+                                            <%= info.timeUntilNextRun %> minutes
+                                        </span>
+                                    </div>
+                                    <div class="progress" style="width: 100px;">
+                                        <div class="progress-bar bg-<%= info.timeUntilNextRun < 60 ? 'danger' : 'success' %>" 
+                                             role="progressbar" 
+                                             style="width: <%= Math.min(100, (info.timeUntilNextRun / 720) * 100) %>%">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <% }); %>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Active vs Closed Chart -->
+            <!-- Organization Stats -->
             <div class="col-xl-6">
                 <div class="card">
                     <div class="card-header">
-                        <i class='bx bx-pie-chart'></i> Job Status Distribution
+                        <i class='bx bx-building'></i> Organization Statistics
                     </div>
                     <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="statusChart"></canvas>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Organization</th>
+                                        <th>Total</th>
+                                        <th>Active</th>
+                                        <th>Closed</th>
+                                        <th>Last Update</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% orgStats.forEach(function(stat) { %>
+                                    <tr>
+                                        <td>
+                                            <span class="org-badge bg-primary">
+                                                <%= stat.data_source.toUpperCase() %>
+                                            </span>
+                                        </td>
+                                        <td><%= stat.total_jobs %></td>
+                                        <td><span class="badge bg-success"><%= stat.active_jobs %></span></td>
+                                        <td><span class="badge bg-danger"><%= stat.closed_jobs %></span></td>
+                                        <td><%= new Date(stat.last_update).toLocaleString() %></td>
+                                    </tr>
+                                    <% }); %>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Organization Stats Table -->
-        <div class="card">
-            <div class="card-header">
-                <i class='bx bx-list-ul'></i> Organization Statistics
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Organization</th>
-                                <th>Status</th>
-                                <th>Count</th>
-                                <th>Last Created</th>
-                                <th>Last Updated</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% jobStats.forEach(function(stat) { %>
-                            <tr>
-                                <td>
-                                    <span class="org-badge bg-primary">
-                                        <%= stat.data_source.toUpperCase() %>
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="status-badge <%= stat.status === 'active' ? 'bg-success' : 'bg-danger' %>">
-                                        <%= stat.status %>
-                                    </span>
-                                </td>
-                                <td><%= stat.count %></td>
-                                <td><%= new Date(stat.last_created).toLocaleString() %></td>
-                                <td><%= stat.last_updated ? new Date(stat.last_updated).toLocaleString() : 'N/A' %></td>
-                            </tr>
+        <div class="row">
+            <!-- ETL History -->
+            <div class="col-xl-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class='bx bx-history'></i> Recent ETL Executions
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline">
+                            <% etlHistory.forEach(function(execution) { %>
+                            <div class="timeline-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1"><%= execution.job_name %></h6>
+                                        <div>
+                                            <span class="status-badge <%= execution.status === 'completed' ? 'bg-success' : 'bg-danger' %>">
+                                                <%= execution.status %>
+                                            </span>
+                                            <% if (execution.error_message) { %>
+                                            <span class="badge bg-warning">Error</span>
+                                            <% } %>
+                                        </div>
+                                        <% if (execution.error_message) { %>
+                                        <div class="update-note">
+                                            <%= execution.error_message %>
+                                        </div>
+                                        <% } %>
+                                    </div>
+                                    <small class="time-ago">
+                                        <%= new Date(execution.start_time).toLocaleString() %>
+                                    </small>
+                                </div>
+                            </div>
                             <% }); %>
-                        </tbody>
-                    </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Job Additions -->
+            <div class="col-xl-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class='bx bx-plus-circle'></i> Recent Job Additions
+                    </div>
+                    <div class="card-body">
+                        <% recentAdditions.forEach(function(job) { %>
+                        <div class="update-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1"><%= job.job_title %></h6>
+                                    <div>
+                                        <span class="org-badge bg-secondary">
+                                            <%= job.data_source.toUpperCase() %>
+                                        </span>
+                                        <span class="status-badge <%= job.status === 'active' ? 'bg-success' : 'bg-danger' %>">
+                                            <%= job.status %>
+                                        </span>
+                                    </div>
+                                </div>
+                                <small class="time-ago">
+                                    <%= new Date(job.created).toLocaleString() %>
+                                </small>
+                            </div>
+                        </div>
+                        <% }); %>
+                    </div>
                 </div>
             </div>
         </div>
