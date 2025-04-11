@@ -20,26 +20,61 @@ changed_files=$(git status --porcelain | awk '{print $2}')
 # Initialize commit message
 commit_message="Update: "
 
-# Check for specific file changes and add to commit message
-if echo "$changed_files" | grep -q "src/util/etl-"; then
-    etl_files=$(echo "$changed_files" | grep "src/util/etl-")
-    for file in $etl_files; do
-        org=$(echo $file | sed 's/src\/util\/etl-\(.*\)\.js/\1/' | tr '[:lower:]' '[:upper:]')
-        commit_message+="$org ETL, "
-    done
-fi
-
-if echo "$changed_files" | grep -q "src/routes/status.js"; then
-    commit_message+="Status page, "
-fi
-
-if echo "$changed_files" | grep -q "src/views/status.ejs"; then
-    commit_message+="Status page template, "
-fi
-
-if echo "$changed_files" | grep -q "migrations/"; then
-    commit_message+="Database migrations, "
-fi
+# Process each changed file
+for file in $changed_files; do
+    # Get file type and changes
+    file_type=$(echo $file | awk -F. '{print $NF}')
+    changes=$(git diff --staged $file 2>/dev/null || git diff $file)
+    
+    # Generate message based on file type and content
+    case $file in
+        src/util/etl-*.js)
+            org=$(echo $file | sed 's/src\/util\/etl-\(.*\)\.js/\1/' | tr '[:lower:]' '[:upper:]')
+            if echo "$changes" | grep -q "async function"; then
+                commit_message+="$org ETL function updates, "
+            elif echo "$changes" | grep -q "console.log"; then
+                commit_message+="$org ETL logging updates, "
+            elif echo "$changes" | grep -q "try.*catch"; then
+                commit_message+="$org ETL error handling, "
+            else
+                commit_message+="$org ETL updates, "
+            fi
+            ;;
+        src/routes/*.js)
+            route=$(echo $file | sed 's/src\/routes\/\(.*\)\.js/\1/')
+            if echo "$changes" | grep -q "router.get\|router.post"; then
+                commit_message+="$route API endpoint updates, "
+            else
+                commit_message+="$route route updates, "
+            fi
+            ;;
+        src/views/*.ejs)
+            view=$(echo $file | sed 's/src\/views\/\(.*\)\.ejs/\1/')
+            if echo "$changes" | grep -q "style"; then
+                commit_message+="$view template styling updates, "
+            elif echo "$changes" | grep -q "script"; then
+                commit_message+="$view template script updates, "
+            else
+                commit_message+="$view template updates, "
+            fi
+            ;;
+        migrations/*.sql)
+            if echo "$changes" | grep -q "CREATE TABLE"; then
+                commit_message+="New table creation, "
+            elif echo "$changes" | grep -q "ALTER TABLE"; then
+                commit_message+="Table schema updates, "
+            else
+                commit_message+="Database schema updates, "
+            fi
+            ;;
+        scripts/*.sh)
+            commit_message+="Script updates, "
+            ;;
+        *)
+            commit_message+="Other updates, "
+            ;;
+    esac
+done
 
 # Remove trailing comma and space
 commit_message=${commit_message%, }
