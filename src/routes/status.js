@@ -3,6 +3,7 @@ const router = express.Router();
 const { pool } = require('../util/db');
 const logger = require('../util/logger');
 const cron = require('node-cron');
+const cronParser = require('cron-parser');
 
 router.get('/', async (req, res) => {
     try {
@@ -116,12 +117,23 @@ router.get('/', async (req, res) => {
 
 // Helper function to calculate next run time
 function getNextRunTime(cronExpression) {
-    const schedule = cron.parse(cronExpression);
-    const nextDate = schedule.next();
-    return {
-        nextRun: nextDate.toISOString(),
-        timeUntilNextRun: Math.floor((nextDate - new Date()) / 1000 / 60) // in minutes
-    };
+    try {
+        const interval = cronParser.parseExpression(cronExpression);
+        const nextDate = interval.next().toDate();
+        return {
+            nextRun: nextDate.toISOString(),
+            timeUntilNextRun: Math.floor((nextDate - new Date()) / 1000 / 60) // in minutes
+        };
+    } catch (error) {
+        logger.error('Error parsing cron expression:', {
+            expression: cronExpression,
+            error: error.message
+        });
+        return {
+            nextRun: 'Error parsing cron expression',
+            timeUntilNextRun: null
+        };
+    }
 }
 
 module.exports = router; 
