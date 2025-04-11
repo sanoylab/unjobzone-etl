@@ -556,6 +556,7 @@
             const orgData = {
                 labels: JSON.parse(orgCanvas.dataset.labels),
                 datasets: [{
+                    label: 'Number of Jobs',
                     data: JSON.parse(orgCanvas.dataset.values),
                     backgroundColor: [
                         '#4e73df',
@@ -565,28 +566,39 @@
                         '#e74a3b',
                         '#5a5c69',
                         '#858796'
-                    ]
+                    ],
+                    borderColor: 'white',
+                    borderWidth: 1
                 }]
             };
 
             // Initialize chart
             new Chart(orgCtx, {
-                type: 'doughnut',
+                type: 'bar',
                 data: orgData,
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                font: {
-                                    size: 12
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}`;
                                 }
                             }
                         }
                     },
-                    cutout: '70%'
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
                 }
             });
         });
