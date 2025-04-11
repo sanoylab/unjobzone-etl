@@ -187,22 +187,24 @@ async function fetchAndProcessWfpJobVacancies() {
             status_updates AS (
                 UPDATE job_vacancies 
                 SET status = CASE 
-                    WHEN job_id = ANY($1) THEN 'active'
+                    WHEN end_date < NOW() THEN 'closed'
                     ELSE 'active'
                 END,
                 notes = CASE 
-                    WHEN job_id = ANY($1) THEN NULL
-                    ELSE NULL
+                    WHEN end_date < NOW() THEN COALESCE(notes, '') || '; Job has expired on ' || NOW()::text
+                    ELSE notes
                 END,
                 updated_at = NOW()
-                WHERE data_source = 'wfp' 
-                AND status != 'closed'
+                WHERE data_source = 'wfp'
                 RETURNING job_id, status
             )
             SELECT 
                 (SELECT COUNT(*) FROM expired_jobs) as expired_count,
                 (SELECT COUNT(*) FROM status_updates WHERE status = 'active') as active_count
-        `, [Array.from(currentJobIds)]);
+        `);
+
+        const expiredCount = jobStatusUpdate.rows[0].expired_count;
+        const activeCount = jobStatusUpdate.rows[0].active_count;
 
         const endTime = new Date();
         const duration = (endTime - startTime) / 1000;
@@ -211,8 +213,8 @@ async function fetchAndProcessWfpJobVacancies() {
         console.log("📊 WFP Jobs ETL Process Summary");
         console.log("=".repeat(80));
         console.log(`📦 Total jobs processed: ${processedJobs}`);
-        console.log(`🗑️  Expired jobs deleted: ${jobStatusUpdate.rows[0].expired_count}`);
-        console.log(`✅ Active jobs: ${jobStatusUpdate.rows[0].active_count}`);
+        console.log(`🗑️  Expired jobs removed: ${expiredCount}`);
+        console.log(`✅ Active jobs: ${activeCount}`);
         console.log(`⏱️ Duration: ${duration.toFixed(2)} seconds`);
         console.log(`⏰ End Time: ${endTime.toISOString()}`);
         console.log("=".repeat(80) + "\n");
