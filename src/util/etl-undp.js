@@ -84,7 +84,7 @@ async function fetchAndProcessUndpJobVacancies() {
                             job.Id, job.Language, jobDetail.items[0].Category, job.Title, job.JobFunction,
                             jobDetail.items[0].ExternalDescriptionStr, job.JobFamily, '', job.PrimaryLocation || '',
                             jobDetail.items[0].RequisitionType, startDate, endDate, agency, null,
-                            practiceArea, '', '', grade, new Date(), 'undp', orgId, applyLink, 'active'
+                            '', '', '', grade, new Date(), 'undp', orgId, applyLink, 'active'
                         ]);
                         newJobs++;
                         console.log(`\n✨ New job added: ${job.Title} (${job.PrimaryLocation || 'No location'})`);

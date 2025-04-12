@@ -43,7 +43,11 @@ async function fetchAndProcessWorldBankJobVacancies() {
         posting_url: `https://worldbank.org/en/about/careers/search?api=true&format=json&rows=1000${job.id}`,
         opening_date: job.opendate ? new Date(job.opendate) : null,
         closing_date: job.closedate ? new Date(job.closedate) : null,
-        status: "active"
+        status: "active",
+        jn: "",
+        jf: "",
+        jc: "",
+        jl: ""
       };
 
       // Check if job exists and if it needs updating
